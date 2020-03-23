@@ -43,7 +43,7 @@ public class AdaptiveClassCodeGeneratorTest {
         URL url = getClass().getResource("/org/apache/dubbo/common/extension/adaptive/HasAdaptiveExt$Adaptive");
         try (InputStream inputStream = url.openStream()) {
             String content = IOUtils.read(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-            // in Windows platform content get from resource contains \r delimiter
+            // Content getting from resource in Windows platform contains '\r' delimiter
             content = content.replaceAll("\r","");
             assertTrue(content.contains(value));
         }
