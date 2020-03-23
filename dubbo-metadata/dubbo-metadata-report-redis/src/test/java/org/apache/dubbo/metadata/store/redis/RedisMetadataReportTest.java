@@ -58,10 +58,12 @@ public class RedisMetadataReportTest {
         String methodName = testInfo.getTestMethod().get().getName();
         if ("testAuthRedisMetadata".equals(methodName) || ("testWrongAuthRedisMetadata".equals(methodName))) {
             String password = "チェリー";
-            redisServer = RedisServer.builder().port(redisPort).setting("requirepass " + password).build();
+            // set maxheap to fix Windows error 0x70 while starting redis
+            redisServer = RedisServer.builder().port(redisPort).setting("requirepass " + password).setting("maxheap 128mb").build();
             registryUrl = URL.valueOf("redis://username:" + password + "@localhost:" + redisPort);
         } else {
-            redisServer = RedisServer.builder().port(redisPort).build();
+            // set maxheap to fix Windows error 0x70 while starting redis
+            redisServer = RedisServer.builder().port(redisPort).setting("maxheap 128mb").build();
             registryUrl = URL.valueOf("redis://localhost:" + redisPort);
         }
 
