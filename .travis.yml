@@ -15,7 +15,7 @@ install: true
 
 script:
   - rm -rf $HOME/.m2/repository/org/glassfish/javax.el/3.0.1-b08
-  - travis_retry --max-time 60 ./mvnw --batch-mode --no-transfer-progress clean install -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true
+  - travis_retry ./mvnw --batch-mode --no-transfer-progress clean install -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
