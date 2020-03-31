@@ -175,6 +175,8 @@ public interface CommonConstants {
 
     String REMOTE_METADATA_STORAGE_TYPE = "remote";
 
+    String DISABLED_RETRIES = "0";
+
     /**
      * Consumer side 's proxy class
      */
@@ -289,6 +291,8 @@ public interface CommonConstants {
     String DEFAULT_LOADBALANCE = "random";
 
     String RETRIES_KEY = "retries";
+
+    String RETRY_KEY = "retry";
 
     String FORKS_KEY = "forks";
 

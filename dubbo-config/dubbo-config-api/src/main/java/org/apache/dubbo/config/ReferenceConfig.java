@@ -19,6 +19,7 @@ package org.apache.dubbo.config;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.Version;
 import org.apache.dubbo.common.bytecode.Wrapper;
+import org.apache.dubbo.common.constants.CommonConstants;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
@@ -195,6 +196,38 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         checkStubAndLocal(interfaceClass);
         ConfigValidationUtils.checkMock(interfaceClass, this);
 
+        // init url parameters from config
+        Map<String, String> map = initReferenceParameter();
+
+        serviceMetadata.getAttachments().putAll(map);
+
+        Map<String, AsyncMethodInfo> attributes = null;
+        if (CollectionUtils.isNotEmpty(getMethods())) {
+            attributes = new HashMap<>();
+            for (MethodConfig methodConfig : getMethods()) {
+                AsyncMethodInfo asyncMethodInfo = AbstractConfig.convertMethodConfig2AsyncInfo(methodConfig);
+                if (asyncMethodInfo != null) {
+//                    consumerModel.getMethodModel(methodConfig.getName()).addAttribute(ASYNC_KEY, asyncMethodInfo);
+                    attributes.put(methodConfig.getName(), asyncMethodInfo);
+                }
+            }
+        }
+
+        ref = createProxy(map);
+
+        serviceMetadata.setTarget(ref);
+        serviceMetadata.addAttribute(PROXY_CLASS_REF, ref);
+        ConsumerModel consumerModel = repository.lookupReferredService(serviceMetadata.getServiceKey());
+        consumerModel.setProxyObject(ref);
+        consumerModel.init(attributes);
+
+        initialized = true;
+
+        // dispatch a ReferenceConfigInitializedEvent since 2.7.4
+        dispatch(new ReferenceConfigInitializedEvent(this, invoker));
+    }
+
+    private Map<String, String> initReferenceParameter() {
         Map<String, String> map = new HashMap<String, String>();
         map.put(SIDE_KEY, CONSUMER_SIDE);
 
@@ -225,22 +258,18 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         if (metadataReportConfig != null && metadataReportConfig.isValid()) {
             map.putIfAbsent(METADATA_KEY, REMOTE_METADATA_STORAGE_TYPE);
         }
-        Map<String, AsyncMethodInfo> attributes = null;
         if (CollectionUtils.isNotEmpty(getMethods())) {
-            attributes = new HashMap<>();
             for (MethodConfig methodConfig : getMethods()) {
                 AbstractConfig.appendParameters(map, methodConfig, methodConfig.getName());
-                String retryKey = methodConfig.getName() + ".retry";
+
+                // check retry key
+                String retryKey = methodConfig.getName() + CommonConstants.DOT_SEPARATOR + CommonConstants.RETRY_KEY;
                 if (map.containsKey(retryKey)) {
                     String retryValue = map.remove(retryKey);
-                    if ("false".equals(retryValue)) {
-                        map.put(methodConfig.getName() + ".retries", "0");
+                    if (Boolean.FALSE.toString().equalsIgnoreCase(retryValue)) {
+                        map.put(methodConfig.getName() + CommonConstants.DOT_SEPARATOR + CommonConstants.RETRIES_KEY,
+                                CommonConstants.DISABLED_RETRIES);
                     }
-                }
-                AsyncMethodInfo asyncMethodInfo = AbstractConfig.convertMethodConfig2AsyncInfo(methodConfig);
-                if (asyncMethodInfo != null) {
-//                    consumerModel.getMethodModel(methodConfig.getName()).addAttribute(ASYNC_KEY, asyncMethodInfo);
-                    attributes.put(methodConfig.getName(), asyncMethodInfo);
                 }
             }
         }
@@ -252,21 +281,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             throw new IllegalArgumentException("Specified invalid registry ip from property:" + DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
         }
         map.put(REGISTER_IP_KEY, hostToRegistry);
-
-        serviceMetadata.getAttachments().putAll(map);
-
-        ref = createProxy(map);
-
-        serviceMetadata.setTarget(ref);
-        serviceMetadata.addAttribute(PROXY_CLASS_REF, ref);
-        ConsumerModel consumerModel = repository.lookupReferredService(serviceMetadata.getServiceKey());
-        consumerModel.setProxyObject(ref);
-        consumerModel.init(attributes);
-
-        initialized = true;
-
-        // dispatch a ReferenceConfigInitializedEvent since 2.7.4
-        dispatch(new ReferenceConfigInitializedEvent(this, invoker));
+        return map;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
