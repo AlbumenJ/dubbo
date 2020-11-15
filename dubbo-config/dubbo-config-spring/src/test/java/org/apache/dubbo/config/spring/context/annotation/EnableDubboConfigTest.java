@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @since 2.5.8
  */
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class EnableDubboConfigTest {
 
     @Test
