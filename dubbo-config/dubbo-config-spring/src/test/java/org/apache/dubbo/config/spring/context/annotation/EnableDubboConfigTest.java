@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.Map;
 
@@ -41,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @since 2.5.8
  */
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 public class EnableDubboConfigTest {
 
     @Test
