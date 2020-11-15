@@ -11,10 +11,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
-      - uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+      #      - uses: actions/cache@v2
+      #        with:
+      #          path: ~/.m2/repository
+      #          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
       - name: Test with Maven
         uses: nick-invision/retry@v1
         with:
@@ -32,10 +32,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+      #      - uses: actions/cache@v2
+      #        with:
+      #          path: ~/.m2/repository
+      #          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
       - name: Test with Maven
         uses: nick-invision/retry@v1
         with:
@@ -53,10 +53,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+      #      - uses: actions/cache@v2
+      #        with:
+      #          path: ~/.m2/repository
+      #          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
       - name: Test with Maven
         uses: nick-invision/retry@v1
         with:
