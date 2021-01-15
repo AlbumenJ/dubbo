@@ -50,13 +50,12 @@ jobs:
       - name: Fetch Dubbo version
         run: |
           REVISION=`awk '/<revision>[^<]+<\/revision>/{gsub(/<revision>|<\/revision>/,"",$1);print $1;exit;}' pom.xml`
-          mkdir version
-          echo $REVISION > ~/version/dubbo
+          echo $REVISION > dubbo-version
       - name: Upload Dubbo version
         uses: actions/upload-artifact@v2
         with:
           name: dubbo-version
-          path: ~/dubbo-version
+          path: dubbo-version
 
   integration-test-prepare:
     runs-on: ubuntu-18.04
@@ -115,14 +114,14 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: dubbo-version
-          path: ~/dubbo-version
+          path: dubbo-version
       - name: Set up JDK ${{matrix.java}}
         uses: actions/setup-java@v1
         with:
           java-version: ${{matrix.java}}
       - name: Init Candidate Versions
         run: |
-          DUBBO_VERSION=`cat ~/version/dubbo`
+          DUBBO_VERSION=`cat dubbo-version`
           CANDIDATE_VERSIONS='dubbo.version:'$DUBBO_VERSION';spring.version:4.3.30.RELEASE;spring-boot.version:1.5.22.RELEASE;spring-boot.version:2.4.1;'
       - name: Build test image
         run: |
