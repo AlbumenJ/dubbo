@@ -48,7 +48,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Fetch Dubbo version
-        if: ${{ startsWith( matrix.os, 'ubuntu') }}
         run: |
           REVISION=`awk '/<revision>[^<]+<\/revision>/{gsub(/<revision>|<\/revision>/,"",$1);print $1;exit;}' pom.xml`
           echo $REVISION > ~/version/dubbo
