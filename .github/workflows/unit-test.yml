@@ -50,6 +50,7 @@ jobs:
       - name: Fetch Dubbo version
         run: |
           REVISION=`awk '/<revision>[^<]+<\/revision>/{gsub(/<revision>|<\/revision>/,"",$1);print $1;exit;}' pom.xml`
+          mkdir version
           echo $REVISION > ~/version/dubbo
       - name: Upload Dubbo version
         uses: actions/upload-artifact@v2
