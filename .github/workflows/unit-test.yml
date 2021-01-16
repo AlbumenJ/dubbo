@@ -32,7 +32,8 @@ jobs:
       - name: Fetch Dubbo version
         run: |
           REVISION=`awk '/<revision>[^<]+<\/revision>/{gsub(/<revision>|<\/revision>/,"",$1);print $1;exit;}' pom.xml`
-          echo $REVISION > dubbo-version
+          mkdir dubbo-version
+          echo $REVISION > dubbo-version/dubbo-version
       - name: Upload Dubbo version
         uses: actions/upload-artifact@v2
         with:
@@ -132,7 +133,7 @@ jobs:
           java-version: ${{matrix.java}}
       - name: Init Candidate Versions
         run: |
-          DUBBO_VERSION=`cat dubbo-version`
+          DUBBO_VERSION=`cat dubbo-version/dubbo-version`
           CANDIDATE_VERSIONS='dubbo.version:'$DUBBO_VERSION';spring.version:4.3.30.RELEASE;spring-boot.version:1.5.22.RELEASE;spring-boot.version:2.4.1;'
       - name: Build test image
         run: |
