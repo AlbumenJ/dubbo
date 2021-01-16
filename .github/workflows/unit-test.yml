@@ -10,7 +10,37 @@ env:
   VERSIONS_LIMIT: 4
 
 jobs:
+  build-source:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 8
+      - uses: actions/cache@v2
+        name: "Cache local Maven repository"
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+      - name: "Dubbo cache"
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository/org/apache/dubbo
+          key: ${{ runner.os }}-dubbo-snapshot
+      - name: Build with Maven
+        run: ./mvnw -U --batch-mode --no-transfer-progress  clean install -Dmaven.test.skip=true -Dmaven.test.skip.exec=true
+      - name: Fetch Dubbo version
+        run: |
+          REVISION=`awk '/<revision>[^<]+<\/revision>/{gsub(/<revision>|<\/revision>/,"",$1);print $1;exit;}' pom.xml`
+          echo $REVISION > dubbo-version
+      - name: Upload Dubbo version
+        uses: actions/upload-artifact@v2
+        with:
+          name: dubbo-version
+          path: dubbo-version
+
   unit-test:
+    needs: [build-source]
     name: "Unit Test On ${{ matrix.os }} (JDK: ${{ matrix.jdk }})"
     runs-on: ${{ matrix.os }}
     strategy:
@@ -29,33 +59,14 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-      - name: "Dubbo cache"
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository/org/apache/dubbo
-          key: ${{ runner.os }}-dubbo-snapshot
       - name: Test with Maven with Integration Tests
         if: ${{ startsWith( matrix.os, 'ubuntu') }}
-        run: ./mvnw --batch-mode --no-transfer-progress clean install -D"maven.wagon.http.retryHandler.count=5" -DskipTests=false -DskipIntegrationTests=true -D"checkstyle.skip=false" -D"rat.skip=false" -D"maven.javadoc.skip=true"
+        run: ./mvnw --batch-mode --no-transfer-progress clean install -Dmaven.wagon.http.retryHandler.count=5 -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true
       - name: Test with Maven without Integration Tests
         if: ${{ startsWith( matrix.os, 'windows') }}
         run: ./mvnw --batch-mode --no-transfer-progress clean install -D"maven.wagon.http.retryHandler.count=5" -DskipTests=false -DskipIntegrationTests=true -D"checkstyle.skip=false" -D"rat.skip=false" -D"maven.javadoc.skip=true"
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
-
-  version-save:
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@v2
-      - name: Fetch Dubbo version
-        run: |
-          REVISION=`awk '/<revision>[^<]+<\/revision>/{gsub(/<revision>|<\/revision>/,"",$1);print $1;exit;}' pom.xml`
-          echo $REVISION > dubbo-version
-      - name: Upload Dubbo version
-        uses: actions/upload-artifact@v2
-        with:
-          name: dubbo-version
-          path: dubbo-version
 
   integration-test-prepare:
     runs-on: ubuntu-18.04
@@ -76,7 +87,7 @@ jobs:
           path: test/jobs
 
   integration-test-job:
-    needs: [unit-test, integration-test-prepare, version-save]
+    needs: [build-source, integration-test-prepare]
     runs-on: ubuntu-18.04
     env:
       JAVA_VER: ${{matrix.java}}
