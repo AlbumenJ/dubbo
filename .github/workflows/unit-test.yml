@@ -63,9 +63,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - name: Test with Maven with Integration Tests
+        timeout-minutes: 30
         if: ${{ startsWith( matrix.os, 'ubuntu') }}
         run: ./mvnw --batch-mode --no-transfer-progress clean install -Dmaven.wagon.http.retryHandler.count=5 -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true
       - name: Test with Maven without Integration Tests
+        timeout-minutes: 30
         if: ${{ startsWith( matrix.os, 'windows') }}
         run: ./mvnw --batch-mode --no-transfer-progress clean install -D"maven.wagon.http.retryHandler.count=5" -DskipTests=false -DskipIntegrationTests=true -D"checkstyle.skip=false" -D"rat.skip=false" -D"maven.javadoc.skip=true"
       - name: Upload coverage to Codecov
@@ -92,6 +94,7 @@ jobs:
   integration-test-job:
     needs: [build-source, integration-test-prepare]
     runs-on: ubuntu-18.04
+    timeout-minutes: 30
     env:
       JAVA_VER: 8
       TEST_CASE_FILE: jobs/testjob_${{matrix.job_id}}.txt
