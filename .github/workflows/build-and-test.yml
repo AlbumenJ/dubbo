@@ -8,8 +8,6 @@ env:
   SHOW_ERROR_DETAIL: 1
   #multi-version size limit
   VERSIONS_LIMIT: 4
-  TEST_MAVEN_OPTS: --batch-mode -U -e --no-transfer-progress clean test -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dmaven.wagon.http.retryHandler.count=5 -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true
-  BUILD_MAVEN_OPTS: --batch-mode -U -e --no-transfer-progress  clean install -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dmaven.wagon.http.retryHandler.count=5 -Dmaven.test.skip=true -Dmaven.test.skip.exec=true
 
 jobs:
   build-source:
@@ -30,7 +28,7 @@ jobs:
           path: ~/.m2/repository/org/apache/dubbo
           key: ${{ runner.os }}-dubbo-snapshot-${{ github.sha }}
       - name: "Build with Maven"
-        run: ./mvnw $BUILD_MAVEN_OPTS
+        run: ./mvnw --batch-mode -U -e --no-transfer-progress  clean install -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dmaven.wagon.http.retryHandler.count=5 -Dmaven.test.skip=true -Dmaven.test.skip.exec=true
       - name: "Calculate Dubbo Version"
         run: |
           REVISION=`awk '/<revision>[^<]+<\/revision>/{gsub(/<revision>|<\/revision>/,"",$1);print $1;exit;}' pom.xml`
@@ -67,7 +65,7 @@ jobs:
       - name: "Test with Maven with Integration Tests"
         timeout-minutes: 30
         if: ${{ startsWith( matrix.os, 'ubuntu') }}
-        run: ./mvnw $LINUX_TEST_MAVEN_OPTS
+        run: ./mvnw --batch-mode -U -e --no-transfer-progress clean test -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dmaven.wagon.http.retryHandler.count=5 -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true
       - name: "Test with Maven without Integration Tests"
         timeout-minutes: 30
         if: ${{ startsWith( matrix.os, 'windows') }}
