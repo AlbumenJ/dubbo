@@ -135,6 +135,7 @@ jobs:
         run: |
           DUBBO_VERSION=`cat dubbo-version/dubbo-version`
           CANDIDATE_VERSIONS='dubbo.version:'$DUBBO_VERSION';spring.version:4.3.30.RELEASE;spring-boot.version:1.5.22.RELEASE;spring-boot.version:2.4.1;'
+          echo "::set-env name=CANDIDATE_VERSIONS::$CANDIDATE_VERSIONS"
       - name: Build test image
         run: |
           cd test && bash ./build-test-image.sh
