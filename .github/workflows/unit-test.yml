@@ -99,7 +99,7 @@ jobs:
         java: [8, 11]
         job_id: [1, 2, 3]
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
         with:
           repository: 'apache/dubbo-samples'
           ref: master
