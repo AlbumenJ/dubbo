@@ -42,7 +42,7 @@ jobs:
       - name: Test with Maven without Integration Tests
         if: ${{ startsWith( matrix.os, 'windows') }}
         run: |
-          rmdir /s/q $HOME/.m2/repository/org/apache/dubbo
+          rmdir /s/q $HOME\.m2\repository\org\apache\dubbo
           ./mvnw --batch-mode --no-transfer-progress clean install -D"maven.wagon.http.retryHandler.count=5" -DskipTests=false -DskipIntegrationTests=true -D"checkstyle.skip=false" -D"rat.skip=false" -D"maven.javadoc.skip=true"
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
