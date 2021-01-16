@@ -26,7 +26,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository/org/apache/dubbo
-          key: ${{ runner.os }}-dubbo-snapshot
+          key: ${{ runner.os }}-dubbo-snapshot-${{ github.sha }}
       - name: Build with Maven
         run: ./mvnw -U --batch-mode --no-transfer-progress  clean install -Dmaven.test.skip=true -Dmaven.test.skip.exec=true
       - name: Fetch Dubbo version
@@ -114,7 +114,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository/org/apache/dubbo
-          key: ${{ runner.os }}-dubbo-snapshot
+          key: ${{ runner.os }}-dubbo-snapshot-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-dubbo-
       - name: Download test list
@@ -135,7 +135,7 @@ jobs:
         run: |
           DUBBO_VERSION=`cat dubbo-version/dubbo-version`
           CANDIDATE_VERSIONS='dubbo.version:'$DUBBO_VERSION';spring.version:4.3.30.RELEASE;spring-boot.version:1.5.22.RELEASE;spring-boot.version:2.4.1;'
-          echo "::set-env name=CANDIDATE_VERSIONS::$CANDIDATE_VERSIONS"
+          echo "CANDIDATE_VERSIONS=$CANDIDATE_VERSIONS" >> $GITHUB_ENV
       - name: Build test image
         run: |
           cd test && bash ./build-test-image.sh
