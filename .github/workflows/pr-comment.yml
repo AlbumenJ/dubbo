@@ -1,13 +1,31 @@
 name: PR Comment
 
-on: [pull_request_review_comment]
+on: [issue_comment]
 
 jobs:
   check-comment:
     runs-on: ubuntu-latest
-    if: ${{ !startsWith( github.event.comment.body, 'Retrigger test workflow' ) }}
+    if: ${{ !(github.event.issue.pull_request && startsWith( github.event.comment.body, 'Retrigger test workflow' )) }}
     steps:
       - uses: potiuk/cancel-workflow-runs@master
         with:
           cancelMode: self
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  pr_commented:
+    # This job only runs for pull request comments
+    name: PR comment
+    if: ${{ github.event.issue.pull_request }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Comment on PR #${{ github.event.issue.number }}"
+
+  issue-commented:
+    # This job only runs for issue comments
+    name: Issue comment
+    if: ${{ !github.event.issue.pull_request }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Comment on issue #${{ github.event.issue.number }}"
