@@ -1,0 +1,13 @@
+name: PR Comment
+
+on: [issue_comment]
+
+jobs:
+  check-comment:
+    runs-on: ubuntu-latest
+    if: ${{ !(github.event.issue.pull_request && startsWith( github.event.comment.body, 'Retrigger test workflow' )) }}
+    steps:
+      - uses: potiuk/cancel-workflow-runs@master
+        with:
+          cancelMode: self
+          token: ${{ secrets.GITHUB_TOKEN }}
