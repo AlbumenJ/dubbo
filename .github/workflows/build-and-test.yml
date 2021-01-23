@@ -2,8 +2,7 @@ name: Build and Test
 
 on:
   workflow_run:
-      workflows:
-        - PR Comment
+    workflows: ["PR Comment"]
     types:
       - completed
   push: null
