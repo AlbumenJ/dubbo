@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          - path: dubbo
+          path: dubbo
       - uses: actions/checkout@v2
         with:
           repository: 'apache/dubbo-spring-boot-project'
