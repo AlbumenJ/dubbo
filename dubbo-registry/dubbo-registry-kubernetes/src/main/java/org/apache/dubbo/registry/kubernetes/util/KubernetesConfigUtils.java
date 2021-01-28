@@ -48,17 +48,17 @@ public class KubernetesConfigUtils {
                 .withCaCertFile(url.getParameter(KubernetesClientConst.CA_CERT_FILE,
                         base.getCaCertFile()))
                 .withCaCertData(url.getParameter(KubernetesClientConst.CA_CERT_DATA,
-                        decodeBase64(base.getCaCertData())))
+                        base.getCaCertData()))
 
                 .withClientKeyFile(url.getParameter(KubernetesClientConst.CLIENT_KEY_FILE,
                         base.getClientKeyFile()))
                 .withClientKeyData(url.getParameter(KubernetesClientConst.CLIENT_KEY_DATA,
-                        decodeBase64(base.getClientKeyData())))
+                        base.getClientKeyData()))
 
                 .withClientCertFile(url.getParameter(KubernetesClientConst.CLIENT_CERT_FILE,
                         base.getClientCertFile()))
                 .withClientCertData(url.getParameter(KubernetesClientConst.CLIENT_CERT_DATA,
-                        decodeBase64(base.getClientCertData())))
+                        base.getClientCertData()))
 
                 .withClientKeyAlgo(url.getParameter(KubernetesClientConst.CLIENT_KEY_ALGO,
                         base.getClientKeyAlgo()))
@@ -101,11 +101,5 @@ public class KubernetesConfigUtils {
         return (url.getParameter(KubernetesClientConst.USE_HTTPS, true) ?
                 "https://" : "http://")
                 + url.getHost() + ":" + url.getPort();
-    }
-
-    private static String decodeBase64(String str) {
-        return StringUtils.isNotEmpty(str) ?
-                new String(Base64.getDecoder().decode(str)) :
-                "";
     }
 }
