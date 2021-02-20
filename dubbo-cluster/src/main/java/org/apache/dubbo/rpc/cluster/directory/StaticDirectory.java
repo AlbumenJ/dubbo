@@ -36,6 +36,7 @@ public class StaticDirectory<T> extends AbstractDirectory<T> {
 
     private final List<Invoker<T>> invokers;
 
+
     public StaticDirectory(List<Invoker<T>> invokers) {
         this(null, invokers, null);
     }
