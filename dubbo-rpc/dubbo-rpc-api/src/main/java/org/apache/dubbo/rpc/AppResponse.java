@@ -26,6 +26,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import static org.apache.dubbo.rpc.Constants.INVOCATION_KEY;
+
 /**
  * {@link AsyncRpcResult} is introduced in 3.0.0 to replace RpcResult, and RpcResult is replaced with {@link AppResponse}:
  * <ul>
@@ -55,7 +57,13 @@ public class AppResponse implements Result {
 
     private Map<String, Object> attachments = new HashMap<>();
 
+    private Map<String, Object> attributes = new HashMap<>();
+
     public AppResponse() {
+    }
+
+    public AppResponse(Invocation invocation) {
+        this.setAttribute(INVOCATION_KEY, invocation);
     }
 
     public AppResponse(Object result) {
@@ -212,6 +220,14 @@ public class AppResponse implements Result {
         attachments.put(key, value);
     }
 
+    public Object getAttribute(String key) {
+        return attributes.get(key);
+    }
+
+    public void setAttribute(String key, Object value) {
+        attributes.put(key, value);
+    }
+
     @Override
     public Result whenCompleteWithContext(BiConsumer<Result, Throwable> fn) {
         throw new UnsupportedOperationException("AppResponse represents an concrete business response, there will be no status changes, you should get internal values directly.");
@@ -230,6 +246,12 @@ public class AppResponse implements Result {
     @Override
     public Result get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         throw new UnsupportedOperationException("AppResponse represents an concrete business response, there will be no status changes, you should get internal values directly.");
+    }
+
+    public void clear() {
+        this.result = null;
+        this.exception = null;
+        this.attachments.clear();
     }
 
     @Override
