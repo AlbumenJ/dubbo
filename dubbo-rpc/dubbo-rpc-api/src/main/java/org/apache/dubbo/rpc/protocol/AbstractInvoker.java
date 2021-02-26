@@ -90,7 +90,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         }
         Map<String, Object> attachment = new HashMap<>();
         for (String key : keys) {
-            String value = url.getParameter(key);
+            String value = url.getUrlParam().getParameter(key);
             if (value != null && value.length() > 0) {
                 attachment.put(key, value);
             }
