@@ -86,7 +86,11 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
 
     @Override
     public URL getUrl() {
-        return getDirectory().getConsumerUrl();
+        URL baseUrl = getDirectory().getConsumerUrl();
+        for (Invoker<T> invoker : getDirectory().getAllInvokers()) {
+            baseUrl = baseUrl.addParametersIfAbsent(invoker.getUrl().getParameters());
+        }
+        return baseUrl;
     }
 
     public URL getRegistryUrl() {
