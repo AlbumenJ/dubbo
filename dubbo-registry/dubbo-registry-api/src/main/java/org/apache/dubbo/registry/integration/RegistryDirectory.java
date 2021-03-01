@@ -367,6 +367,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> implements NotifyL
      */
     private URL mergeUrl(URL providerUrl) {
         if (providerUrl instanceof ServiceAddressURL) {
+            providerUrl = ClusterUtils.mergeProviderUrl(providerUrl, queryMap); // Merge the consumer side parameters
             providerUrl = overrideWithConfigurator(providerUrl);
         } else {
             providerUrl = ClusterUtils.mergeProviderUrl(providerUrl, queryMap); // Merge the consumer side parameters
