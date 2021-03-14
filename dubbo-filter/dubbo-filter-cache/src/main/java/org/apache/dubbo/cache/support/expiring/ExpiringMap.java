@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -40,7 +41,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
      */
     private static final int DEFAULT_EXPIRATION_INTERVAL = 1;
 
-    private static volatile int expireCount = 1;
+    private static AtomicInteger expireCount = new AtomicInteger(1);
 
     private final ConcurrentHashMap<K, ExpiryObject> delegateMap;
 
@@ -60,7 +61,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
     }
 
     public ExpiringMap(int timeToLive, int expirationInterval) {
-        this(new ConcurrentHashMap<K, ExpiryObject>(), timeToLive, expirationInterval);
+        this(new ConcurrentHashMap<>(), timeToLive, expirationInterval);
     }
 
     private ExpiringMap(ConcurrentHashMap<K, ExpiryObject> delegateMap, int timeToLive, int expirationInterval) {
@@ -136,6 +137,9 @@ public class ExpiringMap<K, V> implements Map<K, V> {
 
     @Override
     public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
         return delegateMap.equals(obj);
     }
 
@@ -225,6 +229,9 @@ public class ExpiringMap<K, V> implements Map<K, V> {
 
         @Override
         public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
             return value.equals(obj);
         }
 
@@ -263,7 +270,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         }
 
         public ExpireThread() {
-            expirerThread = new Thread(this, "ExpiryMapExpire-" + expireCount++);
+            expirerThread = new Thread(this, "ExpiryMapExpire-" + expireCount.getAndIncrement());
             expirerThread.setDaemon(true);
         }
 
@@ -281,10 +288,10 @@ public class ExpiringMap<K, V> implements Map<K, V> {
 
         private void processExpires() {
             long timeNow = System.currentTimeMillis();
+            if (timeToLiveMillis <= 0) {
+                return;
+            }
             for (ExpiryObject o : delegateMap.values()) {
-                if (timeToLiveMillis <= 0) {
-                    continue;
-                }
                 long timeIdle = timeNow - o.getLastAccessTime();
                 if (timeIdle >= timeToLiveMillis) {
                     delegateMap.remove(o.getKey());
