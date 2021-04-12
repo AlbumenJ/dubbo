@@ -48,8 +48,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import static java.util.Collections.emptySortedSet;
 import static java.util.Collections.unmodifiableSortedSet;
 import static org.apache.dubbo.common.URL.buildKey;
+import static org.apache.dubbo.common.constants.CommonConstants.CONSUMER_SIDE;
 import static org.apache.dubbo.common.constants.CommonConstants.INTERFACE_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.PROTOCOL_KEY;
+import static org.apache.dubbo.common.constants.CommonConstants.SIDE_KEY;
 import static org.apache.dubbo.common.utils.CollectionUtils.isEmpty;
 import static org.apache.dubbo.rpc.Constants.GENERIC_KEY;
 
@@ -165,17 +167,21 @@ public class InMemoryWritableMetadataService implements WritableMetadataService 
     @Override
     public void publishServiceDefinition(URL providerUrl) {
         try {
-            String interfaceName = providerUrl.getParameter(INTERFACE_KEY);
-            if (StringUtils.isNotEmpty(interfaceName)
-                    && !ProtocolUtils.isGeneric(providerUrl.getParameter(GENERIC_KEY))) {
-                Class interfaceClass = Class.forName(interfaceName);
-                ServiceDefinition serviceDefinition = ServiceDefinitionBuilder.build(interfaceClass);
-                Gson gson = new Gson();
-                String data = gson.toJson(serviceDefinition);
-                serviceDefinitions.put(providerUrl.getServiceKey(), data);
+            if (!ProtocolUtils.isGeneric(providerUrl.getParameter(GENERIC_KEY))) {
+                String interfaceName = providerUrl.getParameter(INTERFACE_KEY);
+                if (StringUtils.isNotEmpty(interfaceName)) {
+                    Class interfaceClass = Class.forName(interfaceName);
+                    ServiceDefinition serviceDefinition = ServiceDefinitionBuilder.build(interfaceClass);
+                    Gson gson = new Gson();
+                    String data = gson.toJson(serviceDefinition);
+                    serviceDefinitions.put(providerUrl.getServiceKey(), data);
+                    return;
+                }
+                logger.error("publishProvider interfaceName is empty . providerUrl: " + providerUrl.toFullString());
+            } else if (CONSUMER_SIDE.equalsIgnoreCase(providerUrl.getParameter(SIDE_KEY))) {
+                //to avoid consumer generic invoke style error
                 return;
             }
-            logger.error("publishProvider interfaceName is empty . providerUrl: " + providerUrl.toFullString());
         } catch (ClassNotFoundException e) {
             //ignore error
             logger.error("publishProvider getServiceDescriptor error. providerUrl: " + providerUrl.toFullString(), e);
@@ -210,7 +216,7 @@ public class InMemoryWritableMetadataService implements WritableMetadataService 
         try {
             metadataSemaphore.acquire();
         } catch (InterruptedException e) {
-            logger.warn("metadata refresh thread has been interrupted unexpectedly while wating for update.", e);
+            logger.warn("metadata refresh thread has been interrupted unexpectedly while waiting for update.", e);
         }
     }
 
