@@ -28,7 +28,9 @@ import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.service.EchoService;
 import org.apache.dubbo.rpc.service.GenericService;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -46,9 +48,20 @@ public class RmiProtocolTest {
         assertEquals(clazz, RmiProtocol.getRemoteClass(NonStdRmiInterface.class));
     }
     */
+
+    @BeforeEach
+    public void setUp() {
+        System.setProperty("java.net.preferIPv4Stack" , "true");
+    }
+
+    @AfterEach
+    public void cleanUp() {
+        System.clearProperty("java.net.preferIPv4Stack");
+    }
+
     @Test
     public void testRmiProtocolTimeout() throws Exception {
-        int availablePort = NetUtils.getAvailablePort();
+        int availablePort = NetUtils.getAvailablePort(40000);
         System.setProperty("sun.rmi.transport.tcp.responseTimeout", "1000");
         DemoService service = new DemoServiceImpl();
         Exporter<?> rpcExporter = protocol.export(proxy.getInvoker(service, DemoService.class, URL.valueOf("rmi://127.0.0.1:" + availablePort + "/TestService")));
@@ -68,7 +81,7 @@ public class RmiProtocolTest {
     @Test
     public void testRmiProtocol() throws Exception {
         {
-            int availablePort = NetUtils.getAvailablePort();
+            int availablePort = NetUtils.getAvailablePort(40010);
             DemoService service = new DemoServiceImpl();
             Exporter<?> rpcExporter = protocol.export(proxy.getInvoker(service, DemoService.class, URL.valueOf("rmi://127.0.0.1:" + availablePort + "/TestService")));
 
@@ -82,7 +95,7 @@ public class RmiProtocolTest {
         }
 
         {
-            int port = NetUtils.getAvailablePort();
+            int port = NetUtils.getAvailablePort(40020);
             RemoteService remoteService = new RemoteServiceImpl();
             Exporter<?> rpcExporter = protocol.export(proxy.getInvoker(remoteService, RemoteService.class, URL.valueOf("rmi://127.0.0.1:" + port + "/remoteService")));
 
@@ -100,7 +113,7 @@ public class RmiProtocolTest {
     @Disabled
     @Test
     public void testRmiProtocol_echoService() throws Exception {
-        int availablePort = NetUtils.getAvailablePort();
+        int availablePort = NetUtils.getAvailablePort(40030);
         DemoService service = new DemoServiceImpl();
         Exporter<?> rpcExporter = protocol.export(proxy.getInvoker(service, DemoService.class, URL.valueOf("rmi://127.0.0.1:" + availablePort + "/TestService")));
 
@@ -112,7 +125,7 @@ public class RmiProtocolTest {
 
         rpcExporter.unexport();
 
-        availablePort = NetUtils.getAvailablePort();
+        availablePort = NetUtils.getAvailablePort(40040);
         RemoteService remoteService = new RemoteServiceImpl();
         rpcExporter = protocol.export(proxy.getInvoker(remoteService, RemoteService.class, URL.valueOf("rmi://127.0.0.1:" + availablePort + "/remoteService")));
 
@@ -127,7 +140,7 @@ public class RmiProtocolTest {
 
     @Test
     public void testGenericInvoke() {
-        int availablePort = NetUtils.getAvailablePort();
+        int availablePort = NetUtils.getAvailablePort(40050);
         DemoService service = new DemoServiceImpl();
         URL url = URL.valueOf("rmi://127.0.0.1:" + availablePort + "/" + DemoService.class.getName() + "?release=2.7.0");
         Exporter<DemoService> exporter = protocol.export(proxy.getInvoker(service, DemoService.class, url));
@@ -142,7 +155,7 @@ public class RmiProtocolTest {
 
     @Test
     public void testRemoteApplicationName() throws Exception {
-        int availablePort = NetUtils.getAvailablePort();
+        int availablePort = NetUtils.getAvailablePort(40060);
         DemoService service = new DemoServiceImpl();
         URL url = URL.valueOf("rmi://127.0.0.1:" + availablePort + "/TestService?release=2.7.0").addParameter("application", "consumer");
         Exporter<?> rpcExporter = protocol.export(proxy.getInvoker(service, DemoService.class, url));
