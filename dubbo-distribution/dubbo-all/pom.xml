@@ -332,6 +332,10 @@
             <artifactId>fastjson</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+        </dependency>
         <!-- Temporarily add this part to exclude transitive dependency -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
