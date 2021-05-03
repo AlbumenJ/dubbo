@@ -22,6 +22,7 @@ import org.apache.dubbo.common.extension.Activate;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.RpcStatus;
@@ -35,7 +36,7 @@ import static org.apache.dubbo.rpc.Constants.EXECUTES_KEY;
  * continue the same behaviour un till it is <10.
  */
 @Activate(group = CommonConstants.PROVIDER, value = EXECUTES_KEY)
-public class ExecuteLimitFilter implements Filter, Filter.Listener {
+public class ExecuteLimitFilter implements Filter, Filter.Listener, LoopFilter {
 
     private static final String EXECUTE_LIMIT_FILTER_START_TIME = "execute_limit_filter_start_time";
 
@@ -61,6 +62,28 @@ public class ExecuteLimitFilter implements Filter, Filter.Listener {
                 throw new RpcException("unexpected exception when ExecuteLimitFilter", t);
             }
         }
+    }
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        URL url = invoker.getUrl();
+        String methodName = invocation.getMethodName();
+        int max = url.getMethodParameter(methodName, EXECUTES_KEY, 0);
+        if (!RpcStatus.beginCount(url, methodName, max)) {
+            throw new RpcException(RpcException.LIMIT_EXCEEDED_EXCEPTION,
+                    "Failed to invoke method " + invocation.getMethodName() + " in provider " +
+                            url + ", cause: The service using threads greater than <dubbo:service executes=\"" + max +
+                            "\" /> limited.");
+        }
+
+        invocation.put(EXECUTE_LIMIT_FILTER_START_TIME, System.currentTimeMillis());
+
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
     }
 
     @Override

@@ -24,6 +24,7 @@ import org.apache.dubbo.common.utils.ConcurrentHashSet;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
@@ -38,7 +39,7 @@ import static org.apache.dubbo.rpc.Constants.DEPRECATED_KEY;
  * @see Filter
  */
 @Activate(group = CommonConstants.CONSUMER, value = DEPRECATED_KEY)
-public class DeprecatedFilter implements Filter {
+public class DeprecatedFilter implements Filter, LoopFilter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeprecatedFilter.class);
 
@@ -54,6 +55,23 @@ public class DeprecatedFilter implements Filter {
             }
         }
         return invoker.invoke(invocation);
+    }
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        String key = invoker.getInterface().getName() + "." + invocation.getMethodName();
+        if (!LOGGED.contains(key)) {
+            LOGGED.add(key);
+            if (invoker.getUrl().getMethodParameter(invocation.getMethodName(), DEPRECATED_KEY, false)) {
+                LOGGER.error("The service method " + invoker.getInterface().getName() + "." + getMethodSignature(invocation) + " is DEPRECATED! Declare from " + invoker.getUrl());
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
     }
 
     private String getMethodSignature(Invocation invocation) {

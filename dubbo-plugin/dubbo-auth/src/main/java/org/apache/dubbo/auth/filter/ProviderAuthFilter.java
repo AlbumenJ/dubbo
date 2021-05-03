@@ -26,11 +26,12 @@ import org.apache.dubbo.rpc.AsyncRpcResult;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
 @Activate(group = CommonConstants.PROVIDER, order = -10000)
-public class ProviderAuthFilter implements Filter {
+public class ProviderAuthFilter implements Filter, LoopFilter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
@@ -48,5 +49,25 @@ public class ProviderAuthFilter implements Filter {
         return invoker.invoke(invocation);
     }
 
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        URL url = invoker.getUrl();
+        boolean shouldAuth = url.getParameter(Constants.SERVICE_AUTH, false);
+        if (shouldAuth) {
+            Authenticator authenticator = ExtensionLoader.getExtensionLoader(Authenticator.class)
+                    .getExtension(url.getParameter(Constants.AUTHENTICATOR, Constants.DEFAULT_AUTHENTICATOR));
+            try {
+                authenticator.authenticate(invocation, url);
+            } catch (Exception e) {
+                return AsyncRpcResult.newDefaultAsyncResult(e, invocation);
+            }
+        }
 
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
+    }
 }

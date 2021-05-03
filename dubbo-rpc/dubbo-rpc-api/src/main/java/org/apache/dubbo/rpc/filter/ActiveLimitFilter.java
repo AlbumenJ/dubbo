@@ -21,6 +21,7 @@ import org.apache.dubbo.common.extension.Activate;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.RpcStatus;
@@ -42,7 +43,7 @@ import static org.apache.dubbo.rpc.Constants.ACTIVES_KEY;
  * @see Filter
  */
 @Activate(group = CONSUMER, value = ACTIVES_KEY)
-public class ActiveLimitFilter implements Filter, Filter.Listener {
+public class ActiveLimitFilter implements Filter, Filter.Listener, LoopFilter {
 
     private static final String ACTIVELIMIT_FILTER_START_TIME = "activelimit_filter_start_time";
 
@@ -79,6 +80,45 @@ public class ActiveLimitFilter implements Filter, Filter.Listener {
         invocation.put(ACTIVELIMIT_FILTER_START_TIME, System.currentTimeMillis());
 
         return invoker.invoke(invocation);
+    }
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        URL url = invoker.getUrl();
+        String methodName = invocation.getMethodName();
+        int max = invoker.getUrl().getMethodParameter(methodName, ACTIVES_KEY, 0);
+        final RpcStatus rpcStatus = RpcStatus.getStatus(invoker.getUrl(), invocation.getMethodName());
+        if (!RpcStatus.beginCount(url, methodName, max)) {
+            long timeout = invoker.getUrl().getMethodParameter(invocation.getMethodName(), TIMEOUT_KEY, 0);
+            long start = System.currentTimeMillis();
+            long remain = timeout;
+            synchronized (rpcStatus) {
+                while (!RpcStatus.beginCount(url, methodName, max)) {
+                    try {
+                        rpcStatus.wait(remain);
+                    } catch (InterruptedException e) {
+                        // ignore
+                    }
+                    long elapsed = System.currentTimeMillis() - start;
+                    remain = timeout - elapsed;
+                    if (remain <= 0) {
+                        throw new RpcException(RpcException.LIMIT_EXCEEDED_EXCEPTION,
+                                "Waiting concurrent invoke timeout in client-side for service:  " +
+                                        invoker.getInterface().getName() + ", method: " + invocation.getMethodName() +
+                                        ", elapsed: " + elapsed + ", timeout: " + timeout + ". concurrent invokes: " +
+                                        rpcStatus.getActive() + ". max concurrent invoke limit: " + max);
+                    }
+                }
+            }
+        }
+
+        invocation.put(ACTIVELIMIT_FILTER_START_TIME, System.currentTimeMillis());
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
     }
 
     @Override

@@ -25,6 +25,7 @@ import org.apache.dubbo.common.utils.NamedThreadFactory;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.support.AccessLogData;
@@ -61,7 +62,7 @@ import static org.apache.dubbo.rpc.Constants.ACCESS_LOG_KEY;
  * </pre></code>
  */
 @Activate(group = PROVIDER, value = ACCESS_LOG_KEY)
-public class AccessLogFilter implements Filter {
+public class AccessLogFilter implements Filter, LoopFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(AccessLogFilter.class);
 
@@ -108,6 +109,25 @@ public class AccessLogFilter implements Filter {
             logger.warn("Exception in AccessLogFilter of service(" + invoker + " -> " + inv + ")", t);
         }
         return invoker.invoke(inv);
+    }
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation inv) throws RpcException {
+        try {
+            String accessLogKey = invoker.getUrl().getParameter(ACCESS_LOG_KEY);
+            if (ConfigUtils.isNotEmpty(accessLogKey)) {
+                AccessLogData logData = buildAccessLogData(invoker, inv);
+                log(accessLogKey, logData);
+            }
+        } catch (Throwable t) {
+            logger.warn("Exception in AccessLogFilter of service(" + invoker + " -> " + inv + ")", t);
+        }
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation inv, Result result) throws RpcException {
+        return result;
     }
 
     private void log(String accessLog, AccessLogData accessLogData) {

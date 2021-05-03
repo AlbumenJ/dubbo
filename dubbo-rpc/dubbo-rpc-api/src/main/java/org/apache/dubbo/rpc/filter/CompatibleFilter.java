@@ -23,6 +23,7 @@ import org.apache.dubbo.common.utils.PojoUtils;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
@@ -45,13 +46,23 @@ import static org.apache.dubbo.remoting.Constants.SERIALIZATION_KEY;
  * @see Filter
  *
  */
-public class CompatibleFilter implements Filter, Filter.Listener {
+public class CompatibleFilter implements Filter, Filter.Listener, LoopFilter {
 
     private static Logger logger = LoggerFactory.getLogger(CompatibleFilter.class);
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         return invoker.invoke(invocation);
+    }
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
     }
 
     @Override

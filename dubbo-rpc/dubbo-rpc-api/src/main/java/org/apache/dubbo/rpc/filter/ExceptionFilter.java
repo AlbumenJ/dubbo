@@ -25,6 +25,7 @@ import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcContext;
 import org.apache.dubbo.rpc.RpcException;
@@ -44,12 +45,22 @@ import java.lang.reflect.Method;
  * </ol>
  */
 @Activate(group = CommonConstants.PROVIDER)
-public class ExceptionFilter implements Filter, Filter.Listener {
+public class ExceptionFilter implements Filter, Filter.Listener, LoopFilter {
     private Logger logger = LoggerFactory.getLogger(ExceptionFilter.class);
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         return invoker.invoke(invocation);
+    }
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
     }
 
     @Override

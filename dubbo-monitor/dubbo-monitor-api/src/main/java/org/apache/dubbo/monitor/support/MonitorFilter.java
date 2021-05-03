@@ -27,6 +27,7 @@ import org.apache.dubbo.monitor.MonitorService;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcContext;
 import org.apache.dubbo.rpc.RpcException;
@@ -49,7 +50,7 @@ import static org.apache.dubbo.rpc.Constants.OUTPUT_KEY;
  * MonitorFilter. (SPI, Singleton, ThreadSafe)
  */
 @Activate(group = {PROVIDER})
-public class MonitorFilter implements Filter, Filter.Listener {
+public class MonitorFilter implements Filter, Filter.Listener, LoopFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(MonitorFilter.class);
     private static final String MONITOR_FILTER_START_TIME = "monitor_filter_start_time";
@@ -84,6 +85,21 @@ public class MonitorFilter implements Filter, Filter.Listener {
             getConcurrent(invoker, invocation).incrementAndGet(); // count up
         }
         return invoker.invoke(invocation); // proceed invocation chain
+    }
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        if (invoker.getUrl().hasParameter(MONITOR_KEY)) {
+            invocation.put(MONITOR_FILTER_START_TIME, System.currentTimeMillis());
+            getConcurrent(invoker, invocation).incrementAndGet(); // count up
+        }
+
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
     }
 
     // concurrent counter

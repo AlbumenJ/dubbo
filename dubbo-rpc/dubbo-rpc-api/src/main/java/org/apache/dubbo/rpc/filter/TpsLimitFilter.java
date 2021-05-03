@@ -22,6 +22,7 @@ import org.apache.dubbo.common.extension.Activate;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.filter.tps.DefaultTPSLimiter;
@@ -37,7 +38,7 @@ import static org.apache.dubbo.rpc.Constants.TPS_LIMIT_RATE_KEY;
  * RpcException.
  * */
 @Activate(group = CommonConstants.PROVIDER, value = TPS_LIMIT_RATE_KEY)
-public class TpsLimitFilter implements Filter {
+public class TpsLimitFilter implements Filter, LoopFilter {
 
     private final TPSLimiter tpsLimiter = new DefaultTPSLimiter();
 
@@ -56,4 +57,22 @@ public class TpsLimitFilter implements Filter {
         return invoker.invoke(invocation);
     }
 
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        if (!tpsLimiter.isAllowable(invoker.getUrl(), invocation)) {
+            throw new RpcException(
+                    "Failed to invoke service " +
+                            invoker.getInterface().getName() +
+                            "." +
+                            invocation.getMethodName() +
+                            " because exceed max service tps.");
+        }
+
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
+    }
 }

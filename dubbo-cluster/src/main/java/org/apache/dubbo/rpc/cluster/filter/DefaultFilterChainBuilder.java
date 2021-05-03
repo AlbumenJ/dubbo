@@ -20,6 +20,7 @@ import org.apache.dubbo.common.extension.Activate;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.cluster.ClusterInvoker;
 
 import java.util.List;
@@ -39,6 +40,17 @@ public class DefaultFilterChainBuilder implements FilterChainBuilder {
             for (int i = filters.size() - 1; i >= 0; i--) {
                 final Filter filter = filters.get(i);
                 final Invoker<T> next = last;
+
+                if(filter instanceof LoopFilter) {
+                    if (next instanceof LoopFilterChainNode) {
+                        ((LoopFilterChainNode) next).addLoopFilter((LoopFilter) filter);
+                        last = next;
+                    } else {
+                        last = new LoopFilterChainNode<>(originalInvoker, next, (LoopFilter) filter);
+                    }
+                    continue;
+                }
+
                 last = new FilterChainNode<>(originalInvoker, next, filter);
             }
         }

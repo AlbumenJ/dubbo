@@ -22,6 +22,7 @@ import org.apache.dubbo.rpc.AsyncRpcResult;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.validation.Validation;
@@ -61,7 +62,7 @@ import static org.apache.dubbo.common.constants.FilterConstants.VALIDATION_KEY;
  * @see org.apache.dubbo.validation.support.AbstractValidation
  */
 @Activate(group = {CONSUMER, PROVIDER}, value = VALIDATION_KEY, order = 10000)
-public class ValidationFilter implements Filter {
+public class ValidationFilter implements Filter, LoopFilter {
 
     private Validation validation;
 
@@ -101,4 +102,30 @@ public class ValidationFilter implements Filter {
         return invoker.invoke(invocation);
     }
 
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        if (validation != null && !invocation.getMethodName().startsWith("$")
+                && ConfigUtils.isNotEmpty(invoker.getUrl().getMethodParameter(invocation.getMethodName(), VALIDATION_KEY))) {
+            try {
+                Validator validator = validation.getValidator(invoker.getUrl());
+                if (validator != null) {
+                    validator.validate(invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments());
+                }
+            } catch (RpcException e) {
+                throw e;
+            } catch (ValidationException e) {
+                // only use exception's message to avoid potential serialization issue
+                return AsyncRpcResult.newDefaultAsyncResult(new ValidationException(e.getMessage()), invocation);
+            } catch (Throwable t) {
+                return AsyncRpcResult.newDefaultAsyncResult(t, invocation);
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
+    }
 }

@@ -25,6 +25,7 @@ import org.apache.dubbo.rpc.AsyncRpcResult;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
@@ -65,7 +66,7 @@ import static org.apache.dubbo.common.constants.FilterConstants.CACHE_KEY;
  *
  */
 @Activate(group = {CONSUMER, PROVIDER}, value = CACHE_KEY)
-public class CacheFilter implements Filter {
+public class CacheFilter implements Filter, LoopFilter {
 
     private CacheFactory cacheFactory;
 
@@ -111,6 +112,35 @@ public class CacheFilter implements Filter {
             }
         }
         return invoker.invoke(invocation);
+    }
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        if (cacheFactory != null && ConfigUtils.isNotEmpty(invoker.getUrl().getMethodParameter(invocation.getMethodName(), CACHE_KEY))) {
+            Cache cache = cacheFactory.getCache(invoker.getUrl(), invocation);
+            if (cache != null) {
+                String key = StringUtils.toArgumentString(invocation.getArguments());
+                Object value = cache.get(key);
+                if (value != null) {
+                    if (value instanceof ValueWrapper) {
+                        return AsyncRpcResult.newDefaultAsyncResult(((ValueWrapper) value).get(), invocation);
+                    } else {
+                        return AsyncRpcResult.newDefaultAsyncResult(value, invocation);
+                    }
+                }
+                Result result = invoker.invoke(invocation);
+                if (!result.hasException()) {
+                    cache.put(key, new ValueWrapper(result.getValue()));
+                }
+                return result;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        return result;
     }
 
     /**
