@@ -20,6 +20,7 @@ import org.apache.dubbo.common.constants.CommonConstants;
 import org.apache.dubbo.common.extension.Activate;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.threadlocal.InternalThreadLocal;
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.common.utils.ConcurrentHashSet;
 import org.apache.dubbo.remoting.Channel;
@@ -27,6 +28,7 @@ import org.apache.dubbo.remoting.Constants;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcContext;
 import org.apache.dubbo.rpc.RpcException;
@@ -43,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * TraceFilter
  */
 @Activate(group = CommonConstants.PROVIDER)
-public class TraceFilter implements Filter {
+public class TraceFilter implements Filter, LoopFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceFilter.class);
 
@@ -124,4 +126,63 @@ public class TraceFilter implements Filter {
         return result;
     }
 
+    private InternalThreadLocal<Long> startRequestTime = new InternalThreadLocal<>();
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        startRequestTime.set(System.currentTimeMillis());
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        long end = System.currentTimeMillis();
+        if (TRACERS.size() > 0) {
+            String key = invoker.getInterface().getName() + "." + invocation.getMethodName();
+            Set<Channel> channels = TRACERS.get(key);
+            if (channels == null || channels.isEmpty()) {
+                key = invoker.getInterface().getName();
+                channels = TRACERS.get(key);
+            }
+            if (CollectionUtils.isNotEmpty(channels)) {
+                for (Channel channel : new ArrayList<>(channels)) {
+                    if (channel.isConnected()) {
+                        try {
+                            int max = 1;
+                            Integer m = (Integer) channel.getAttribute(TRACE_MAX);
+                            if (m != null) {
+                                max = m;
+                            }
+                            int count = 0;
+                            AtomicInteger c = (AtomicInteger) channel.getAttribute(TRACE_COUNT);
+                            if (c == null) {
+                                c = new AtomicInteger();
+                                channel.setAttribute(TRACE_COUNT, c);
+                            }
+                            count = c.getAndIncrement();
+                            if (count < max) {
+                                String prompt = channel.getUrl().getParameter(Constants.PROMPT_KEY, Constants.DEFAULT_PROMPT);
+                                channel.send("\r\n" + RpcContext.getContext().getRemoteAddress() + " -> "
+                                        + invoker.getInterface().getName()
+                                        + "." + invocation.getMethodName()
+                                        + "(" + JSON.toJSONString(invocation.getArguments()) + ")" + " -> " + JSON.toJSONString(result.getValue())
+                                        + "\r\nelapsed: " + (end - startRequestTime.get()) + " ms."
+                                        + "\r\n\r\n" + prompt);
+                            }
+                            if (count >= max - 1) {
+                                channels.remove(channel);
+                            }
+                        } catch (Throwable e) {
+                            channels.remove(channel);
+                            logger.warn(e.getMessage(), e);
+                        }
+                    } else {
+                        channels.remove(channel);
+                    }
+                }
+            }
+        }
+        startRequestTime.remove();
+        return result;
+    }
 }

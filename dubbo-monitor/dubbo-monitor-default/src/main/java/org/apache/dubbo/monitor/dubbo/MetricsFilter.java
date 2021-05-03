@@ -21,12 +21,15 @@ import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.store.DataStore;
+import org.apache.dubbo.common.threadlocal.InternalThreadLocal;
 import org.apache.dubbo.common.utils.NetUtils;
 import org.apache.dubbo.monitor.MetricsService;
 import org.apache.dubbo.rpc.AsyncRpcResult;
+import org.apache.dubbo.rpc.BaseFilter;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.LoopFilter;
 import org.apache.dubbo.rpc.Protocol;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcContext;
@@ -67,12 +70,14 @@ import static org.apache.dubbo.monitor.Constants.DUBBO_PROVIDER_METHOD;
 import static org.apache.dubbo.monitor.Constants.METHOD;
 import static org.apache.dubbo.monitor.Constants.SERVICE;
 
-public class MetricsFilter implements Filter {
+public class MetricsFilter implements Filter, BaseFilter.Listener, LoopFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsFilter.class);
     private static volatile AtomicBoolean exported = new AtomicBoolean(false);
     private Integer port;
     private String protocolName;
+
+    private InternalThreadLocal<Long> startRequestTime = new InternalThreadLocal<>();
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
@@ -120,6 +125,65 @@ public class MetricsFilter implements Filter {
             }
             reportMetrics(invoker, invocation, duration, result, isProvider);
             throw e;
+        }
+    }
+
+    @Override
+    public Result onBefore(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        if (exported.compareAndSet(false, true)) {
+            this.protocolName = invoker.getUrl().getParameter(METRICS_PROTOCOL) == null ?
+                    DEFAULT_PROTOCOL : invoker.getUrl().getParameter(METRICS_PROTOCOL);
+
+            Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(protocolName);
+
+            this.port = invoker.getUrl().getParameter(METRICS_PORT) == null ?
+                    protocol.getDefaultPort() : Integer.valueOf(invoker.getUrl().getParameter(METRICS_PORT));
+
+            Invoker<MetricsService> metricsInvoker = initMetricsInvoker();
+
+            try {
+                protocol.export(metricsInvoker);
+            } catch (RuntimeException e) {
+                logger.error("Metrics Service need to be configured" +
+                        " when multiple processes are running on a host" + e.getMessage());
+            }
+        }
+
+        startRequestTime.set(System.currentTimeMillis());
+        return null;
+    }
+
+    @Override
+    public Result onAfter(Invoker<?> invoker, Invocation invocation, Result result) throws RpcException {
+        long duration = System.currentTimeMillis() - startRequestTime.get();
+        reportMetrics(invoker, invocation, duration, "success", RpcContext.getContext().isProviderSide());
+        startRequestTime.remove();
+        return result;
+    }
+
+    @Override
+    public void onResponse(Result appResponse, Invoker<?> invoker, Invocation invocation) {
+
+    }
+
+    @Override
+    public void onError(Throwable t, Invoker<?> invoker, Invocation invocation) {
+        if(t instanceof RpcException) {
+            long duration = System.currentTimeMillis() - startRequestTime.get();
+            String result = "error";
+            if (((RpcException) t).isTimeout()) {
+                result = "timeoutError";
+            }
+            if (((RpcException) t).isBiz()) {
+                result = "bisError";
+            }
+            if (((RpcException) t).isNetwork()) {
+                result = "networkError";
+            }
+            if (((RpcException) t).isSerialization()) {
+                result = "serializationError";
+            }
+            reportMetrics(invoker, invocation, duration, result, RpcContext.getContext().isProviderSide());
         }
     }
 
