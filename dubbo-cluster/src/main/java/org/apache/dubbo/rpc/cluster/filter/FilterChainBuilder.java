@@ -192,11 +192,14 @@ public interface FilterChainBuilder {
                     LOOP_FILTER filter = filterList.get(currentDepth);
                     asyncResult = filter.onBefore(nextNode, invocation);
                     if (asyncResult != null) {
+                        currentDepth++;
                         break;
                     }
                 }
                 currentDepth--;
-                asyncResult = nextNode.invoke(invocation);
+                if (asyncResult == null) {
+                    asyncResult = nextNode.invoke(invocation);
+                }
                 for (; currentDepth >= 0; currentDepth--) {
                     LOOP_FILTER filter = filterList.get(currentDepth);
                     asyncResult = filter.onAfter(nextNode, invocation, asyncResult);
