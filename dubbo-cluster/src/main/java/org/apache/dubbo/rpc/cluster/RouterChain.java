@@ -16,14 +16,6 @@
  */
 package org.apache.dubbo.rpc.cluster;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.Version;
 import org.apache.dubbo.common.extension.ExtensionLoader;
@@ -41,6 +33,16 @@ import org.apache.dubbo.rpc.cluster.router.state.BitList;
 import org.apache.dubbo.rpc.cluster.router.state.RouterCache;
 import org.apache.dubbo.rpc.cluster.router.state.StateRouter;
 import org.apache.dubbo.rpc.cluster.router.state.StateRouterFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * Router chain
@@ -61,7 +63,7 @@ public class RouterChain<T> {
     private List<StateRouter> builtinStateRouters = Collections.emptyList();
     private List<StateRouter> stateRouters = Collections.emptyList();
     private final ExecutorRepository executorRepository = ExtensionLoader.getExtensionLoader(ExecutorRepository.class)
-        .getDefaultExtension();
+            .getDefaultExtension();
 
     protected URL url;
 
@@ -83,22 +85,22 @@ public class RouterChain<T> {
     private RouterChain(URL url) {
         loopPool = executorRepository.nextExecutorExecutor();
         List<RouterFactory> extensionFactories = ExtensionLoader.getExtensionLoader(RouterFactory.class)
-            .getActivateExtension(url, "router");
+                .getActivateExtension(url, "router");
 
         List<Router> routers = extensionFactories.stream()
-            .map(factory -> factory.getRouter(url))
-            .collect(Collectors.toList());
+                .map(factory -> factory.getRouter(url))
+                .collect(Collectors.toList());
 
         initWithRouters(routers);
 
         List<StateRouterFactory> extensionStateRouterFactories = ExtensionLoader.getExtensionLoader(
-            StateRouterFactory.class)
-            .getActivateExtension(url, "stateRouter");
+                StateRouterFactory.class)
+                .getActivateExtension(url, "stateRouter");
 
         List<StateRouter> stateRouters = extensionStateRouterFactories.stream()
-            .map(factory -> factory.getRouter(url, this))
-            .sorted(StateRouter::compareTo)
-            .collect(Collectors.toList());
+                .map(factory -> factory.getRouter(url, this))
+                .sorted(StateRouter::compareTo)
+                .collect(Collectors.toList());
 
         // init state routers
         initWithStateRouters(stateRouters);
@@ -161,11 +163,11 @@ public class RouterChain<T> {
         AddrCache<T> cache = this.cache.get();
         if (cache == null) {
             throw new RpcException(RpcException.ROUTER_CACHE_NOT_BUILD, "Failed to invoke the method "
-                + invocation.getMethodName() + " in the service " + url.getServiceInterface()
-                + ". address cache not build "
-                + " on the consumer " + NetUtils.getLocalHost()
-                + " using the dubbo version " + Version.getVersion()
-                + ".");
+                    + invocation.getMethodName() + " in the service " + url.getServiceInterface()
+                    + ". address cache not build "
+                    + " on the consumer " + NetUtils.getLocalHost()
+                    + " using the dubbo version " + Version.getVersion()
+                    + ".");
         }
         BitList<Invoker<T>> finalBitListInvokers = new BitList<>(invokers, false);
         for (StateRouter stateRouter : stateRouters) {
@@ -177,7 +179,7 @@ public class RouterChain<T> {
 
         List<Invoker<T>> finalInvokers = new ArrayList<>(finalBitListInvokers.size());
 
-        for(Invoker<T> invoker: finalBitListInvokers) {
+        for (Invoker<T> invoker : finalBitListInvokers) {
             finalInvokers.add(invoker);
         }
 
@@ -200,6 +202,7 @@ public class RouterChain<T> {
 
     /**
      * Build the asynchronous address cache for stateRouter.
+     *
      * @param notify Whether the addresses in registry has changed.
      */
     private void buildCache(boolean notify) {
@@ -210,27 +213,28 @@ public class RouterChain<T> {
         List<Invoker<T>> copyInvokers = new ArrayList<>(this.invokers);
         AddrCache<T> newCache = new AddrCache<T>();
         newCache.setInvokers(invokers);
+        Map<String, RouterCache<T>> routerCacheMap = new HashMap<>((int) (stateRouters.size() / 0.75f) + 1);
         for (StateRouter stateRouter : stateRouters) {
-            RouterCache routerCache;
             try {
-                routerCache = poolRouter(stateRouter, origin, copyInvokers, notify);
+                RouterCache routerCache = poolRouter(stateRouter, origin, copyInvokers, notify);
                 //file cache
-                newCache.getCache().put(stateRouter.getName(), routerCache);
+                routerCacheMap.put(stateRouter.getName(), routerCache);
             } catch (Throwable t) {
                 logger.error("Failed to pool router: " + stateRouter.getUrl() + ", cause: " + t.getMessage(), t);
                 return;
             }
         }
-
+        newCache.setCache(routerCacheMap);
         this.cache.set(newCache);
     }
 
     /**
      * Cache the address list for each StateRouter.
-     * @param router router
-     * @param orign The original address cache
+     *
+     * @param router   router
+     * @param orign    The original address cache
      * @param invokers The full address list
-     * @param notify Whether the addresses in registry has changed.
+     * @param notify   Whether the addresses in registry has changed.
      * @return
      */
     private RouterCache poolRouter(StateRouter router, AddrCache<T> orign, List<Invoker<T>> invokers, boolean notify) {
@@ -249,8 +253,8 @@ public class RouterChain<T> {
 
     private boolean isCacheMiss(AddrCache<T> cache, String routerName) {
         return cache == null || cache.getCache() == null || cache.getInvokers() == null || cache.getCache().get(
-            routerName)
-            == null;
+                routerName)
+                == null;
     }
 
     /***
