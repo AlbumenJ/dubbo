@@ -81,7 +81,7 @@ import static org.springframework.util.ClassUtils.resolveClassName;
 
 /**
  * {@link BeanFactoryPostProcessor} used for processing of {@link Service @Service} annotated classes. it's also the
- * infrastructure class of XML {@link BeanDefinitionParser} on &lt;dubbbo:annotation /&gt;
+ * infrastructure class of XML {@link BeanDefinitionParser} on &lt;dubbo:annotation /&gt;
  *
  * @see AnnotationBeanDefinitionParser
  * @see BeanDefinitionRegistryPostProcessor
@@ -239,7 +239,7 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
      * {@link Service} Annotation.
      *
      * @param scanner       {@link ClassPathBeanDefinitionScanner}
-     * @param packageToScan pachage to scan
+     * @param packageToScan package to scan
      * @param registry      {@link BeanDefinitionRegistry}
      * @return non-null
      * @since 2.5.8
@@ -297,6 +297,9 @@ public class ServiceClassPostProcessor implements BeanDefinitionRegistryPostProc
 
         if (scanner.checkCandidate(beanName, serviceBeanDefinition)) { // check duplicated candidate bean
             registry.registerBeanDefinition(beanName, serviceBeanDefinition);
+            if (!serviceBeanDefinition.getPropertyValues().contains("id")) {
+                serviceBeanDefinition.getPropertyValues().addPropertyValue("id", beanName);
+            }
 
             if (logger.isInfoEnabled()) {
                 logger.info("The BeanDefinition[" + serviceBeanDefinition +

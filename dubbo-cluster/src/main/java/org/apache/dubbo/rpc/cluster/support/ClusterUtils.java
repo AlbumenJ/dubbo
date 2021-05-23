@@ -17,9 +17,11 @@
 package org.apache.dubbo.rpc.cluster.support;
 
 import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.remoting.Constants;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.dubbo.common.constants.CommonConstants.ALIVE_KEY;
@@ -40,6 +42,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.THREADS_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.THREAD_NAME_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.TIMESTAMP_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.VERSION_KEY;
+import static org.apache.dubbo.common.constants.CommonConstants.GENERIC_KEY;
 
 /**
  * ClusterUtils
@@ -88,6 +91,9 @@ public class ClusterUtils {
             if(map.containsKey(VERSION_KEY)){
                 copyOfLocalMap.remove(VERSION_KEY);
             }
+            if (map.containsKey(GENERIC_KEY)) {
+                copyOfLocalMap.remove(GENERIC_KEY);
+            }
 
             copyOfLocalMap.remove(RELEASE_KEY);
             copyOfLocalMap.remove(DUBBO_VERSION_KEY);
@@ -97,24 +103,43 @@ public class ClusterUtils {
 
             map.putAll(copyOfLocalMap);
 
-            map.put(REMOTE_APPLICATION_KEY, remoteMap.get(APPLICATION_KEY));
+            if (remoteMap != null) {
+                map.put(REMOTE_APPLICATION_KEY, remoteMap.get(APPLICATION_KEY));
 
-            // Combine filters and listeners on Provider and Consumer
-            String remoteFilter = remoteMap.get(REFERENCE_FILTER_KEY);
-            String localFilter = copyOfLocalMap.get(REFERENCE_FILTER_KEY);
-            if (remoteFilter != null && remoteFilter.length() > 0
-                    && localFilter != null && localFilter.length() > 0) {
-                map.put(REFERENCE_FILTER_KEY, remoteFilter + "," + localFilter);
-            }
-            String remoteListener = remoteMap.get(INVOKER_LISTENER_KEY);
-            String localListener = copyOfLocalMap.get(INVOKER_LISTENER_KEY);
-            if (remoteListener != null && remoteListener.length() > 0
-                    && localListener != null && localListener.length() > 0) {
-                map.put(INVOKER_LISTENER_KEY, remoteListener + "," + localListener);
+                // Combine filters and listeners on Provider and Consumer
+                String remoteFilter = remoteMap.get(REFERENCE_FILTER_KEY);
+                String localFilter = copyOfLocalMap.get(REFERENCE_FILTER_KEY);
+                if (remoteFilter != null && remoteFilter.length() > 0
+                        && localFilter != null && localFilter.length() > 0) {
+                    map.put(REFERENCE_FILTER_KEY, remoteFilter + "," + localFilter);
+                }
+                String remoteListener = remoteMap.get(INVOKER_LISTENER_KEY);
+                String localListener = copyOfLocalMap.get(INVOKER_LISTENER_KEY);
+                if (remoteListener != null && remoteListener.length() > 0
+                        && localListener != null && localListener.length() > 0) {
+                    map.put(INVOKER_LISTENER_KEY, remoteListener + "," + localListener);
+                }
             }
         }
 
         return remoteUrl.clearParameters().addParameters(map);
+    }
+
+    public static URL mergeProviderUrl(URL remoteUrl, Map<String, String> localMap) {
+
+        //urlprocessor => upc
+        List<ProviderURLMergeProcessor> providerURLMergeProcessors = ExtensionLoader.getExtensionLoader(ProviderURLMergeProcessor.class)
+                .getActivateExtension(remoteUrl, "upc");
+
+        if (providerURLMergeProcessors != null && providerURLMergeProcessors.size() > 0) {
+            for (ProviderURLMergeProcessor providerURLMergeProcessor : providerURLMergeProcessors) {
+                if (providerURLMergeProcessor.accept(remoteUrl, localMap)) {
+                    return providerURLMergeProcessor.mergeProviderUrl(remoteUrl, localMap);
+                }
+            }
+        }
+
+        return mergeUrl(remoteUrl, localMap);
     }
 
 }
