@@ -14,16 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.rpc.cluster.support;
 
-import org.apache.dubbo.common.URL;
-import org.apache.dubbo.common.extension.SPI;
+package org.apache.dubbo.rpc.listener;
 
+import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.InvokerListener;
+import org.apache.dubbo.rpc.RpcException;
+
+import java.util.HashMap;
 import java.util.Map;
 
-@SPI
-public interface ProviderURLMergeProcessor {
-    URL mergeProviderUrl(URL providerUrl, Map<String, String> localParametersMap);
+public class MapInvokerListener implements InvokerListener {
+    private Map<String, String> storeMap = new HashMap<>(2);
 
-    boolean accept(URL providerUrl, Map<String, String> localParametersMap);
+    @Override
+    public void referred(Invoker<?> invoker) throws RpcException {
+        storeMap.put("referred", "referred");
+    }
+
+    @Override
+    public void destroyed(Invoker<?> invoker) {
+        storeMap.put("destroyed", "destroyed");
+    }
+
+    public String getReferred() {
+        return storeMap.get("referred");
+    }
+
+    public String getDestroyed() {
+        return storeMap.get("destroyed");
+    }
 }
