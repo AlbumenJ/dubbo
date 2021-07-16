@@ -88,6 +88,8 @@ public class MigrationRule {
         Object step = map.get("step");
         if (step != null) {
             migrationRule.setStep(MigrationStep.valueOf(step.toString()));
+        } else {
+            throw new IllegalArgumentException("step should be specified");
         }
 
         Object threshold = map.get("threshold");
