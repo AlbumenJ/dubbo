@@ -31,6 +31,8 @@ public class IstioConstant {
 
     public final static String KUBERNETES_SA_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token";
 
+    public final static String ISTIO_CA_PATH = "/var/run/secrets/istio/root-cert.pem";
+
     public final static String RSA_KEY_SIZE_KEY = "RSA_KEY_SIZE";
 
     public final static String DEFAULT_RSA_KEY_SIZE = "2048";

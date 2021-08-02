@@ -19,6 +19,7 @@ package org.apache.dubbo.registry.xds.istio;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.registry.xds.XdsCertificateSigner;
 import org.apache.dubbo.rpc.RpcException;
 
@@ -45,8 +46,10 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 import org.bouncycastle.util.io.pem.PemObject;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -85,6 +88,7 @@ public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
                 }
             }
         }
+        logger.error(certPairCache.toString());
         return certPairCache;
     }
 
@@ -127,11 +131,22 @@ public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
 
         String csr = generateCsr(publicKey, signer);
 
-        ManagedChannel channel = NettyChannelBuilder.forTarget(istioEnv.getCaAddr())
+        ManagedChannel channel;
+        if(StringUtils.isNotEmpty(istioEnv.getCaCert())) {
+            ByteArrayInputStream caCertStream = new ByteArrayInputStream(istioEnv.getCaCert().getBytes(StandardCharsets.UTF_8));
+            channel = NettyChannelBuilder.forTarget(istioEnv.getCaAddr())
                 .sslContext(GrpcSslContexts.forClient()
-                        .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                        .build())
+                    .trustManager(caCertStream)
+                    .build())
                 .build();
+            caCertStream.close();
+        } else {
+            channel = NettyChannelBuilder.forTarget(istioEnv.getCaAddr())
+                .sslContext(GrpcSslContexts.forClient()
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .build())
+                .build();
+        }
 
         Metadata header = new Metadata();
         Metadata.Key<String> key = Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -165,7 +180,7 @@ public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
         }
 
         String privateKeyPem = generatePrivatePemKey(privateKey);
-        CertPair certPair = new CertPair(privateKeyPem, publicKeyBuilder.toString(), expireTime);
+        CertPair certPair = new CertPair(istioEnv.getCaCert(), privateKeyPem, publicKeyBuilder.toString(), expireTime);
 
         channel.shutdown();
         return certPair;

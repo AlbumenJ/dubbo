@@ -20,6 +20,7 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.registry.xds.XdsCertificateSigner;
 
 import io.envoyproxy.envoy.service.discovery.v3.AggregatedDiscoveryServiceGrpc;
@@ -36,6 +37,7 @@ import io.grpc.stub.StreamObserver;
 
 import javax.net.ssl.SSLException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public class XdsChannel {
@@ -47,15 +49,31 @@ public class XdsChannel {
         try {
             XdsCertificateSigner signer = ExtensionLoader.getExtensionLoader(XdsCertificateSigner.class).getExtension(url.getParameter("Signer","istio"));
             XdsCertificateSigner.CertPair certPair = signer.request(url);
-            SslContext context = GrpcSslContexts.forClient()
-                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                    .keyManager(new ByteArrayInputStream(certPair.getPublicKey().getBytes(StandardCharsets.UTF_8)), new ByteArrayInputStream(certPair.getPrivateKey().getBytes(StandardCharsets.UTF_8)))
+            SslContext context;
+            ByteArrayInputStream publicKeyStream = new ByteArrayInputStream(certPair.getPublicKey().getBytes(StandardCharsets.UTF_8));
+            ByteArrayInputStream privateKeyStream = new ByteArrayInputStream(certPair.getPrivateKey().getBytes(StandardCharsets.UTF_8));
+            if (StringUtils.isNotEmpty(certPair.getCaCert())) {
+                ByteArrayInputStream caCertStream = new ByteArrayInputStream(certPair.getCaCert().getBytes(StandardCharsets.UTF_8));
+                context = GrpcSslContexts.forClient()
+                    .trustManager(caCertStream)
+                    .keyManager(publicKeyStream, privateKeyStream)
                     .build();
+                caCertStream.close();
+            } else {
+                context = GrpcSslContexts.forClient()
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .keyManager(publicKeyStream, privateKeyStream)
+                    .build();
+            }
+            publicKeyStream.close();
+            privateKeyStream.close();
             channel1 = NettyChannelBuilder.forAddress(url.getHost(), url.getPort())
                     .sslContext(context)
                     .build();
         } catch (SSLException e) {
             logger.error("Error occurred when creating gRPC channel to control panel.", e);
+        } catch (IOException ignore) {
+
         }
         channel = channel1;
     }

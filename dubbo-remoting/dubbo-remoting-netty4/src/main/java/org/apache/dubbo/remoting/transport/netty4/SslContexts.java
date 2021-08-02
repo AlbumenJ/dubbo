@@ -38,21 +38,34 @@ public class SslContexts {
     private static final Logger logger = LoggerFactory.getLogger(SslContexts.class);
 
     public static SslContext buildServerSslContext(URL url) {
-        SslConfig sslConfig = getSslConfig();
-
         SslContextBuilder sslClientContextBuilder = null;
+
         try {
-            String password = sslConfig.getServerKeyPassword();
-            if (password != null) {
-                sslClientContextBuilder = SslContextBuilder.forServer(sslConfig.getServerKeyCertChainPathStream(),
-                        sslConfig.getServerPrivateKeyPathStream(), password);
+            InputStream serverKeyCertChainPathStream;
+            InputStream serverPrivateKeyPathStream;
+            InputStream serverTrustCertCollectionPathStream;
+            String password = null;
+
+            SslConfig sslConfig = getSslConfig();
+            if (sslConfig != null) {
+                serverKeyCertChainPathStream = sslConfig.getServerKeyCertChainPathStream();
+                serverPrivateKeyPathStream = sslConfig.getServerPrivateKeyPathStream();
+                serverTrustCertCollectionPathStream = sslConfig.getServerTrustCertCollectionPathStream();
+                password = sslConfig.getServerKeyPassword();
             } else {
-                sslClientContextBuilder = SslContextBuilder.forServer(sslConfig.getServerKeyCertChainPathStream(),
-                        sslConfig.getServerPrivateKeyPathStream());
+                throw new IllegalStateException("Ssl enabled, but no ssl cert information provided!");
             }
 
-            if (sslConfig.getServerTrustCertCollectionPathStream() != null) {
-                sslClientContextBuilder.trustManager(sslConfig.getServerTrustCertCollectionPathStream());
+            if (password != null) {
+                sslClientContextBuilder = SslContextBuilder.forServer(serverKeyCertChainPathStream,
+                    serverPrivateKeyPathStream, password);
+            } else {
+                sslClientContextBuilder = SslContextBuilder.forServer(serverKeyCertChainPathStream,
+                    serverPrivateKeyPathStream);
+            }
+
+            if (serverTrustCertCollectionPathStream != null) {
+                sslClientContextBuilder.trustManager(serverTrustCertCollectionPathStream);
                 sslClientContextBuilder.clientAuth(ClientAuth.REQUIRE);
             }
         } catch (Exception e) {
@@ -63,6 +76,7 @@ public class SslContexts {
         } catch (SSLException e) {
             throw new IllegalStateException("Build SslSession failed.", e);
         }
+
     }
 
     public static SslContext buildClientSslContext(URL url) {
@@ -95,7 +109,7 @@ public class SslContexts {
     }
 
     private static SslConfig getSslConfig() {
-        return ApplicationModel.getConfigManager().getSsl().orElseThrow(() -> new IllegalStateException("Ssl enabled, but no ssl cert information provided!"));
+        return ApplicationModel.getConfigManager().getSsl().orElse(null);
     }
 
     /**
@@ -110,8 +124,8 @@ public class SslContexts {
             return SslProvider.JDK;
         }
         throw new IllegalStateException(
-                "Could not find any valid TLS provider, please check your dependency or deployment environment, " +
-                        "usually netty-tcnative, Conscrypt, or Jetty NPN/ALPN is needed.");
+            "Could not find any valid TLS provider, please check your dependency or deployment environment, " +
+                "usually netty-tcnative, Conscrypt, or Jetty NPN/ALPN is needed.");
     }
 
     private static boolean checkJdkProvider() {

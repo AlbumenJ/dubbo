@@ -30,6 +30,8 @@ import java.util.Optional;
 public class IstioEnv implements XdsEnv {
     private static final Logger logger = LoggerFactory.getLogger(IstioEnv.class);
 
+    private String caCert;
+
     private String caAddr;
 
     private String serviceAccount = null;
@@ -52,8 +54,14 @@ public class IstioEnv implements XdsEnv {
 
     public IstioEnv() {
         File saFile = new File(IstioConstant.KUBERNETES_SA_PATH);
+        File caFile = new File(IstioConstant.ISTIO_CA_PATH);
         if (saFile.canRead()) {
             try {
+                if (caFile.exists()) {
+                    caCert = FileUtils.readFileToString(caFile, StandardCharsets.UTF_8);
+                } else {
+                    caCert = "";
+                }
                 serviceAccount = FileUtils.readFileToString(saFile, StandardCharsets.UTF_8);
                 trustDomain = Optional.ofNullable(System.getenv(IstioConstant.TRUST_DOMAIN_KEY)).orElse(IstioConstant.DEFAULT_TRUST_DOMAIN);
                 workloadNameSpace = Optional.ofNullable(System.getenv(IstioConstant.WORKLOAD_NAMESPACE_KEY)).orElse(IstioConstant.DEFAULT_WORKLOAD_NAMESPACE);
@@ -72,6 +80,10 @@ public class IstioEnv implements XdsEnv {
             throw new UnsupportedOperationException("Unable to found kubernetes service account token file. " +
                     "Please check if work in Kubernetes and mount service account token file correctly.");
         }
+    }
+
+    public String getCaCert() {
+        return caCert;
     }
 
     public String getCaAddr() {
