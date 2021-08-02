@@ -16,11 +16,10 @@
  */
 package org.apache.dubbo.registry.xds.istio;
 
-import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.utils.StringUtils;
-import org.apache.dubbo.registry.xds.XdsCertificateSigner;
+import org.apache.dubbo.remoting.transport.security.SecurityProvider;
 import org.apache.dubbo.rpc.RpcException;
 
 import io.grpc.ManagedChannel;
@@ -61,27 +60,44 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
+public class IstioCitadelCertificateSigner implements SecurityProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(IstioCitadelCertificateSigner.class);
 
-    private final IstioEnv istioEnv;
+    private static volatile boolean supported = false;
+
+    private IstioEnv istioEnv;
 
     private CertPair certPairCache;
 
     public IstioCitadelCertificateSigner() {
-        istioEnv = new IstioEnv();
+    }
+
+    public static void supported() {
+        supported = true;
     }
 
     @Override
-    public CertPair request(URL url) {
+    public boolean isSupported() {
+        return supported;
+    }
+
+    @Override
+    public CertPair request() {
+        if (istioEnv == null) {
+            synchronized (this) {
+                if (istioEnv == null) {
+                    istioEnv = new IstioEnv();
+                }
+            }
+        }
         if (certPairCache != null && !certPairCache.isExpire()) {
             return certPairCache;
         }
         synchronized (this) {
             if (certPairCache == null || certPairCache.isExpire()) {
                 try {
-                    certPairCache = createCert(url);
+                    certPairCache = createCert();
                 } catch (IOException e) {
                     logger.error("Generate Cert from Istio failed.", e);
                     throw new RpcException("Generate Cert from Istio failed.", e);
@@ -92,7 +108,7 @@ public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
         return certPairCache;
     }
 
-    public CertPair createCert(URL url) throws IOException {
+    public CertPair createCert() throws IOException {
         PublicKey publicKey = null;
         PrivateKey privateKey = null;
         ContentSigner signer = null;
@@ -110,7 +126,7 @@ public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
 
             } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | OperatorCreationException e) {
                 logger.error("Generate Key with secp256r1 algorithm failed. Please check if your system support. " +
-                        "Will attempt to generate with RSA2048.", e);
+                    "Will attempt to generate with RSA2048.", e);
             }
         }
 
@@ -132,7 +148,7 @@ public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
         String csr = generateCsr(publicKey, signer);
 
         ManagedChannel channel;
-        if(StringUtils.isNotEmpty(istioEnv.getCaCert())) {
+        if (StringUtils.isNotEmpty(istioEnv.getCaCert())) {
             ByteArrayInputStream caCertStream = new ByteArrayInputStream(istioEnv.getCaCert().getBytes(StandardCharsets.UTF_8));
             channel = NettyChannelBuilder.forTarget(istioEnv.getCaAddr())
                 .sslContext(GrpcSslContexts.forClient()
@@ -164,8 +180,8 @@ public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
         AtomicBoolean failed = new AtomicBoolean(false);
 
         stub.createCertificate(
-                generateRequest(csr),
-                generateResponseObserver(countDownLatch, publicKeyBuilder, failed));
+            generateRequest(csr),
+            generateResponseObserver(countDownLatch, publicKeyBuilder, failed));
 
         long expireTime = System.currentTimeMillis() + (long) (istioEnv.getSecretTTL() * istioEnv.getSecretGracePeriodRatio());
 
@@ -188,10 +204,10 @@ public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
 
     private Ca.IstioCertificateRequest generateRequest(String csr) {
         return Ca.IstioCertificateRequest
-                .newBuilder()
-                .setCsr(csr)
-                .setValidityDuration(istioEnv.getSecretTTL())
-                .build();
+            .newBuilder()
+            .setCsr(csr)
+            .setValidityDuration(istioEnv.getSecretTTL())
+            .build();
     }
 
     private StreamObserver<Ca.IstioCertificateResponse> generateResponseObserver(CountDownLatch countDownLatch, StringBuffer publicKeyBuilder, AtomicBoolean failed) {
@@ -241,18 +257,18 @@ public class IstioCitadelCertificateSigner implements XdsCertificateSigner {
 
     private String generateCsr(PublicKey publicKey, ContentSigner signer) throws IOException {
         GeneralNames subjectAltNames = new GeneralNames(
-                new GeneralName[]{
-                        new GeneralName(6, istioEnv.getCsrHost())
-                });
+            new GeneralName[]{
+                new GeneralName(6, istioEnv.getCsrHost())
+            });
 
         ExtensionsGenerator extGen = new ExtensionsGenerator();
         extGen.addExtension(Extension.subjectAlternativeName, true, subjectAltNames);
 
         PKCS10CertificationRequest request =
-                new JcaPKCS10CertificationRequestBuilder(
-                        new X500Name("O=" + istioEnv.getTrustDomain()), publicKey)
-                        .addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extGen.generate())
-                        .build(signer);
+            new JcaPKCS10CertificationRequestBuilder(
+                new X500Name("O=" + istioEnv.getTrustDomain()), publicKey)
+                .addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extGen.generate())
+                .build(signer);
 
         String csr = generatePemKey("CERTIFICATE REQUEST", request.getEncoded());
 

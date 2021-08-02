@@ -20,4 +20,49 @@ import org.apache.dubbo.common.extension.SPI;
 
 @SPI
 public interface SecurityProvider {
+
+    boolean isSupported();
+
+    CertPair request();
+
+    class CertPair {
+        private final String caCert;
+        private final String privateKey;
+        private final String publicKey;
+        private final long expireTime;
+
+        public CertPair(String caCert, String privateKey, String publicKey, long expireTime) {
+            this.caCert = caCert;
+            this.privateKey = privateKey;
+            this.publicKey = publicKey;
+            this.expireTime = expireTime;
+        }
+
+        public String getCaCert() {
+            return caCert;
+        }
+
+        public String getPrivateKey() {
+            return privateKey;
+        }
+
+        public String getPublicKey() {
+            return publicKey;
+        }
+
+        public boolean isExpire() {
+            return System.currentTimeMillis() < expireTime;
+        }
+
+        @Override
+        public String toString() {
+            return "CertPair{" +
+                "caCert='" + caCert + '\'' +
+                ", privateKey='" + privateKey + '\'' +
+                ", publicKey='" + publicKey + '\'' +
+                ", expireTime=" + expireTime +
+                '}';
+        }
+    }
+
 }

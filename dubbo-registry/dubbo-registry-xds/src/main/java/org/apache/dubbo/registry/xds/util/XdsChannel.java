@@ -21,7 +21,8 @@ import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.utils.StringUtils;
-import org.apache.dubbo.registry.xds.XdsCertificateSigner;
+import org.apache.dubbo.registry.xds.istio.IstioCitadelCertificateSigner;
+import org.apache.dubbo.remoting.transport.security.SecurityProvider;
 
 import io.envoyproxy.envoy.service.discovery.v3.AggregatedDiscoveryServiceGrpc;
 import io.envoyproxy.envoy.service.discovery.v3.DeltaDiscoveryRequest;
@@ -47,8 +48,9 @@ public class XdsChannel {
     protected XdsChannel(URL url) {
         ManagedChannel channel1 = null;
         try {
-            XdsCertificateSigner signer = ExtensionLoader.getExtensionLoader(XdsCertificateSigner.class).getExtension(url.getParameter("Signer","istio"));
-            XdsCertificateSigner.CertPair certPair = signer.request(url);
+            SecurityProvider signer = ExtensionLoader.getExtensionLoader(SecurityProvider.class).getExtension(url.getParameter("Signer","istio"));
+            SecurityProvider.CertPair certPair = signer.request();
+            IstioCitadelCertificateSigner.supported();
             SslContext context;
             ByteArrayInputStream publicKeyStream = new ByteArrayInputStream(certPair.getPublicKey().getBytes(StandardCharsets.UTF_8));
             ByteArrayInputStream privateKeyStream = new ByteArrayInputStream(certPair.getPrivateKey().getBytes(StandardCharsets.UTF_8));

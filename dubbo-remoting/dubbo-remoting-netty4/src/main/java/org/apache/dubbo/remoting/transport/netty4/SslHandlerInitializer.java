@@ -23,6 +23,7 @@ import org.apache.dubbo.common.logger.LoggerFactory;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.ssl.OptionalSslHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
@@ -60,8 +61,7 @@ public class SslHandlerInitializer {
         public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
             super.handlerAdded(ctx);
 
-            SSLEngine sslEngine = sslContext.newEngine(ctx.alloc());
-            ctx.pipeline().addFirst(new SslHandler(sslEngine, false));
+            ctx.pipeline().addFirst(new OptionalSslHandler(sslContext));
         }
 
         @Override
