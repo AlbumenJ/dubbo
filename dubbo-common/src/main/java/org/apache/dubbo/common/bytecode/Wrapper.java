@@ -252,6 +252,7 @@ public abstract class Wrapper {
         // make class
         long id = WRAPPER_CLASS_COUNTER.getAndIncrement();
         ClassGenerator cc = ClassGenerator.newInstance(cl);
+        Class<?> neighborClass = Modifier.isPublic(c.getModifiers()) ? Wrapper.class : c;
         cc.setClassName((Modifier.isPublic(c.getModifiers()) ? Wrapper.class.getName() : c.getName() + "$sw") + id);
         cc.setSuperClass(Wrapper.class);
 
@@ -274,7 +275,7 @@ public abstract class Wrapper {
         cc.addMethod(c3.toString());
 
         try {
-            Class<?> wc = cc.toClass();
+            Class<?> wc = cc.toClass(neighborClass);
             // setup static field.
             wc.getField("pts").set(null, pts);
             wc.getField("pns").set(null, pts.keySet().toArray(new String[0]));

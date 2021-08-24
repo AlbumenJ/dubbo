@@ -31,7 +31,7 @@ public abstract class AbstractCompiler implements Compiler {
     private static final Pattern CLASS_PATTERN = Pattern.compile("class\\s+([$_a-zA-Z][$_a-zA-Z0-9]*)\\s+");
 
     @Override
-    public Class<?> compile(String code, ClassLoader classLoader) {
+    public Class<?> compile(Class<?> neighbor, String code, ClassLoader classLoader) {
         code = code.trim();
         Matcher matcher = PACKAGE_PATTERN.matcher(code);
         String pkg;
@@ -55,7 +55,7 @@ public abstract class AbstractCompiler implements Compiler {
                 throw new IllegalStateException("The java code not endsWith \"}\", code: \n" + code + "\n");
             }
             try {
-                return doCompile(className, code);
+                return doCompile(neighbor, className, code);
             } catch (RuntimeException t) {
                 throw t;
             } catch (Throwable t) {
@@ -64,6 +64,6 @@ public abstract class AbstractCompiler implements Compiler {
         }
     }
 
-    protected abstract Class<?> doCompile(String name, String source) throws Throwable;
+    protected abstract Class<?> doCompile(Class<?> neighbor, String name, String source) throws Throwable;
 
 }

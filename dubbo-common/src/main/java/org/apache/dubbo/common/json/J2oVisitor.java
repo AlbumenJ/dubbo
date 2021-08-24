@@ -17,6 +17,7 @@
 package org.apache.dubbo.common.json;
 
 import org.apache.dubbo.common.bytecode.Wrapper;
+import org.apache.dubbo.common.utils.ReflectUtils;
 import org.apache.dubbo.common.utils.Stack;
 import org.apache.dubbo.common.utils.StringUtils;
 
@@ -299,7 +300,7 @@ class J2oVisitor implements JSONVisitor {
                     try {
                         Field field = Throwable.class.getDeclaredField("detailMessage");
                         if (!field.isAccessible()) {
-                            field.setAccessible(true);
+                            ReflectUtils.setAccessible(field, true);
                         }
                         field.set(mValue, obj);
                     } catch (NoSuchFieldException | IllegalAccessException e) {

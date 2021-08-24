@@ -25,7 +25,7 @@ public class AdaptiveCompilerTest extends JavaCodeTest {
     public void testAvailableCompiler() throws Exception {
         AdaptiveCompiler.setDefaultCompiler("jdk");
         AdaptiveCompiler compiler = new AdaptiveCompiler();
-        Class<?> clazz = compiler.compile(getSimpleCode(), AdaptiveCompiler.class.getClassLoader());
+        Class<?> clazz = compiler.compile(JavaCodeTest.class, getSimpleCode(), AdaptiveCompiler.class.getClassLoader());
         HelloService helloService = (HelloService) clazz.newInstance();
         Assertions.assertEquals("Hello world!", helloService.sayHello());
     }

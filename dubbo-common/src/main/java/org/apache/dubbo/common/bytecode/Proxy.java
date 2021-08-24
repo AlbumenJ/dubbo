@@ -218,7 +218,7 @@ public abstract class Proxy {
             ccp.addField("private " + InvocationHandler.class.getName() + " handler;");
             ccp.addConstructor(Modifier.PUBLIC, new Class<?>[] {InvocationHandler.class}, new Class<?>[0], "handler=$1;");
             ccp.addDefaultConstructor();
-            Class<?> clazz = ccp.toClass();
+            Class<?> clazz = ccp.toClass(Proxy.class);
             clazz.getField("methods").set(null, methods.toArray(new Method[0]));
 
             // create Proxy class.
@@ -228,7 +228,7 @@ public abstract class Proxy {
             ccm.addDefaultConstructor();
             ccm.setSuperClass(Proxy.class);
             ccm.addMethod("public Object newInstance(" + InvocationHandler.class.getName() + " h){ return new " + pcn + "($1); }");
-            Class<?> pc = ccm.toClass();
+            Class<?> pc = ccm.toClass(Proxy.class);
             proxy = (Proxy) pc.newInstance();
 
             synchronized (classCache) {

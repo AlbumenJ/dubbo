@@ -164,7 +164,7 @@ public abstract class Mixin {
             // create MixinInstance class.
             String micn = pkg + ".mixin" + id;
             ccp.setClassName(micn);
-            ccp.toClass();
+            ccp.toClass(Mixin.class);
 
             // create Mixin class.
             String fcn = Mixin.class.getName() + id;
@@ -173,7 +173,7 @@ public abstract class Mixin {
             ccm.addDefaultConstructor();
             ccm.setSuperClass(Mixin.class.getName());
             ccm.addMethod("public Object newInstance(Object[] delegates){ return new " + micn + "($1); }");
-            Class<?> mixin = ccm.toClass();
+            Class<?> mixin = ccm.toClass(Mixin.class);
             return (Mixin) mixin.getDeclaredConstructor().newInstance();
         } catch (RuntimeException e) {
             throw e;

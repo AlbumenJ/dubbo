@@ -281,12 +281,17 @@ public final class ClassGenerator {
         return mPool;
     }
 
-    public Class<?> toClass() {
-        return toClass(ClassUtils.getClassLoader(ClassGenerator.class),
+    /**
+     * @param neighbor    A class belonging to the same package that this
+     *                    class belongs to.  It is used to load the class.
+     */
+    public Class<?> toClass(Class<?> neighbor) {
+        return toClass(neighbor,
+                ClassUtils.getClassLoader(ClassGenerator.class),
                 getClass().getProtectionDomain());
     }
 
-    public Class<?> toClass(ClassLoader loader, ProtectionDomain pd) {
+    public Class<?> toClass(Class<?> neighborClass, ClassLoader loader, ProtectionDomain pd) {
         if (mCtc != null) {
             mCtc.detach();
         }
@@ -337,7 +342,8 @@ public final class ClassGenerator {
                     }
                 }
             }
-            return mCtc.toClass(loader, pd);
+
+            return mPool.toClass(mCtc, neighborClass, loader, pd);
         } catch (RuntimeException e) {
             throw e;
         } catch (NotFoundException | CannotCompileException e) {

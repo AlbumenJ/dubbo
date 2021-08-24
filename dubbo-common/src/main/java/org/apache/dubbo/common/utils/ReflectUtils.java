@@ -24,6 +24,7 @@ import javassist.NotFoundException;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.MethodDescriptor;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -34,7 +35,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.net.URL;
+import java.security.AccessController;
 import java.security.CodeSource;
+import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1366,6 +1369,21 @@ public final class ReflectUtils {
         if ((!Modifier.isPublic(method.getModifiers()) ||
                 !Modifier.isPublic(method.getDeclaringClass().getModifiers())) && !method.isAccessible()) {
             method.setAccessible(true);
+        }
+    }
+
+    public static void setAccessible(AccessibleObject object, boolean accessible) {
+        if (System.getSecurityManager() == null) {
+            object.setAccessible(accessible);
+        }
+        else {
+            AccessController.doPrivileged(new PrivilegedAction() {
+                @Override
+                public Object run() {
+                    object.setAccessible(accessible);  // <~ moar Dragons
+                    return null;
+                }
+            });
         }
     }
 

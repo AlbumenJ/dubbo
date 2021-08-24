@@ -33,7 +33,7 @@ public class AdaptiveCompiler implements Compiler {
     }
 
     @Override
-    public Class<?> compile(String code, ClassLoader classLoader) {
+    public Class<?> compile(Class<?> neighbor, String code, ClassLoader classLoader) {
         Compiler compiler;
         ExtensionLoader<Compiler> loader = ExtensionLoader.getExtensionLoader(Compiler.class);
         String name = DEFAULT_COMPILER; // copy reference
@@ -42,7 +42,7 @@ public class AdaptiveCompiler implements Compiler {
         } else {
             compiler = loader.getDefaultExtension();
         }
-        return compiler.compile(code, classLoader);
+        return compiler.compile(neighbor, code, classLoader);
     }
 
 }
