@@ -21,7 +21,6 @@ import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.rpc.model.ScopeModel;
 import org.apache.dubbo.rpc.model.ServiceModel;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.dubbo.common.constants.CommonConstants.APPLICATION_KEY;
@@ -36,7 +35,6 @@ public abstract class ServiceAddressURL extends URL {
     protected final transient URL consumerURL;
 
     //cache
-    private transient Map<String, String> concatenatedPrams;
 //    private transient Map<String, String> allParameters;
 
     public ServiceAddressURL(
@@ -164,34 +162,6 @@ public abstract class ServiceAddressURL extends URL {
         if (StringUtils.isEmpty(value)) {
             value = super.getAnyMethodParameter(key);
         }
-        return value;
-    }
-
-    @Override
-    public String getConcatenatedParameter(String key) {
-        if (concatenatedPrams == null) {
-            concatenatedPrams = new HashMap<>(1);
-        }
-        String value = concatenatedPrams.get(key);
-        if (StringUtils.isNotEmpty(value)) {
-            return value;
-        }
-
-        // Combine filters and listeners on Provider and Consumer
-        String remoteValue = super.getParameter(key);
-        String localValue = consumerURL.getParameter(key);
-        if (remoteValue != null && remoteValue.length() > 0
-                && localValue != null && localValue.length() > 0) {
-            value = remoteValue + "," + localValue;
-            concatenatedPrams.put(key, value);
-            return value;
-        }
-        if (localValue != null && localValue.length() > 0) {
-            value = localValue;
-        } else if (remoteValue != null && remoteValue.length() > 0) {
-            value = remoteValue;
-        }
-        concatenatedPrams.put(key, value);
         return value;
     }
 

@@ -639,26 +639,12 @@ class URL implements Serializable {
         return methodNumbers;
     }
 
-    private Map<String, URL> getUrls() {
-        // concurrent initialization is tolerant
-        if (urls == null) {
-            urls = new ConcurrentHashMap<>();
-        }
-        return urls;
-    }
-
     public URL getUrlParameter(String key) {
-        URL u = getUrls().get(key);
-        if (u != null) {
-            return u;
-        }
         String value = getParameterAndDecoded(key);
         if (StringUtils.isEmpty(value)) {
             return null;
         }
-        u = URL.valueOf(value);
-        getUrls().put(key, u);
-        return u;
+        return URL.valueOf(value);
     }
 
     public double getParameter(String key, double defaultValue) {
@@ -1580,10 +1566,6 @@ class URL implements Serializable {
     public String getVersion(String defaultValue) {
         String value = getVersion();
         return StringUtils.isEmpty(value) ? defaultValue : value;
-    }
-
-    public String getConcatenatedParameter(String key) {
-        return getParameter(key);
     }
 
     public String getCategory(String defaultValue) {

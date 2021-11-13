@@ -72,11 +72,9 @@ public abstract class CacheableFailbackRegistry extends FailbackRegistry {
     private ScheduledExecutorService cacheRemovalScheduler;
     private int cacheRemovalTaskIntervalInMillis;
     private int cacheClearWaitingThresholdInMillis;
-    private Map<ServiceAddressURL, Long> waitForRemove = new ConcurrentHashMap<>();
     private Semaphore semaphore = new Semaphore(1);
 
     private final Map<String, String> extraParameters;
-    protected final Map<URL, Map<String, ServiceAddressURL>> stringUrls = new HashMap<>();
 
     public CacheableFailbackRegistry(URL url) {
         super(url);
@@ -84,8 +82,8 @@ public abstract class CacheableFailbackRegistry extends FailbackRegistry {
         extraParameters.put(CHECK_KEY, String.valueOf(false));
 
         cacheRemovalScheduler = url.getOrDefaultApplicationModel().getExtensionLoader(ExecutorRepository.class).getDefaultExtension().nextScheduledExecutor();
-        cacheRemovalTaskIntervalInMillis = getIntConfig(url.getScopeModel(), CACHE_CLEAR_TASK_INTERVAL, 2 * 60 * 1000);
-        cacheClearWaitingThresholdInMillis = getIntConfig(url.getScopeModel(), CACHE_CLEAR_WAITING_THRESHOLD, 5 * 60 * 1000);
+        cacheRemovalTaskIntervalInMillis = getIntConfig(url.getScopeModel(), CACHE_CLEAR_TASK_INTERVAL, 30 * 1000);
+        cacheClearWaitingThresholdInMillis = getIntConfig(url.getScopeModel(), CACHE_CLEAR_WAITING_THRESHOLD, 60 * 1000);
     }
 
     protected static int getIntConfig(ScopeModel scopeModel, String key, int def) {
@@ -107,63 +105,28 @@ public abstract class CacheableFailbackRegistry extends FailbackRegistry {
     }
 
     protected void evictURLCache(URL url) {
-        Map<String, ServiceAddressURL> oldURLs = stringUrls.remove(url);
-        try {
-            if (oldURLs != null && oldURLs.size() > 0) {
-                logger.info("Evicting urls for service " + url.getServiceKey() + ", size " + oldURLs.size());
-                Long currentTimestamp = System.currentTimeMillis();
-                for (Map.Entry<String, ServiceAddressURL> entry : oldURLs.entrySet()) {
-                    waitForRemove.put(entry.getValue(), currentTimestamp);
-                }
-                if (CollectionUtils.isNotEmptyMap(waitForRemove)) {
-                    if (semaphore.tryAcquire()) {
-                        cacheRemovalScheduler.schedule(new RemovalTask(), cacheRemovalTaskIntervalInMillis, TimeUnit.MILLISECONDS);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.warn("Failed to evict url for " + url.getServiceKey(), e);
+        if (semaphore.tryAcquire()) {
+            cacheRemovalScheduler.schedule(new RemovalTask(), cacheRemovalTaskIntervalInMillis, TimeUnit.MILLISECONDS);
         }
     }
 
     protected List<URL> toUrlsWithoutEmpty(URL consumer, Collection<String> providers) {
-        // keep old urls
-        Map<String, ServiceAddressURL> oldURLs = stringUrls.get(consumer);
         // create new urls
-        Map<String, ServiceAddressURL> newURLs;
+        List<URL> newURLs = new ArrayList<>(providers.size());
         URL copyOfConsumer = removeParamsFromConsumer(consumer);
-        if (oldURLs == null) {
-            newURLs = new HashMap<>();
-            for (String rawProvider : providers) {
-                rawProvider = stripOffVariableKeys(rawProvider);
-                ServiceAddressURL cachedURL = createURL(rawProvider, copyOfConsumer, getExtraParameters());
-                if (cachedURL == null) {
-                    logger.warn("Invalid address, failed to parse into URL " + rawProvider);
-                    continue;
-                }
-                newURLs.put(rawProvider, cachedURL);
+        for (String rawProvider : providers) {
+            rawProvider = stripOffVariableKeys(rawProvider);
+            ServiceAddressURL cachedURL = createURL(rawProvider, copyOfConsumer, getExtraParameters());
+            if (cachedURL == null) {
+                logger.warn("Invalid address, failed to parse into URL " + rawProvider);
+                continue;
             }
-        } else {
-            newURLs = new HashMap<>((int) (oldURLs.size() / .75 + 1));
-            // maybe only default , or "env" + default
-            for (String rawProvider : providers) {
-                rawProvider = stripOffVariableKeys(rawProvider);
-                ServiceAddressURL cachedURL = oldURLs.remove(rawProvider);
-                if (cachedURL == null) {
-                    cachedURL = createURL(rawProvider, copyOfConsumer, getExtraParameters());
-                    if (cachedURL == null) {
-                        logger.warn("Invalid address, failed to parse into URL " + rawProvider);
-                        continue;
-                    }
-                }
-                newURLs.put(rawProvider, cachedURL);
-            }
+            newURLs.add(cachedURL);
         }
 
         evictURLCache(consumer);
-        stringUrls.put(consumer, newURLs);
 
-        return new ArrayList<>(newURLs.values());
+        return newURLs;
     }
 
     protected List<URL> toUrlsWithEmpty(URL consumer, String path, Collection<String> providers) {
@@ -314,26 +277,28 @@ public abstract class CacheableFailbackRegistry extends FailbackRegistry {
     private class RemovalTask implements Runnable {
         @Override
         public void run() {
-            logger.info("Clearing cached URLs, waiting to clear size " + waitForRemove.size());
-            int clearCount = 0;
+            int clearAddressCount = 0;
+            int clearParamCount = 0;
             try {
-                Iterator<Map.Entry<ServiceAddressURL, Long>> it = waitForRemove.entrySet().iterator();
-                while (it.hasNext()) {
-                    Map.Entry<ServiceAddressURL, Long> entry = it.next();
-                    ServiceAddressURL removeURL = entry.getKey();
-                    long removeTime = entry.getValue();
+                Iterator<Map.Entry<String, URLAddress>> addressIt = stringAddress.entrySet().iterator();
+                while (addressIt.hasNext()) {
+                    Map.Entry<String, URLAddress> entry = addressIt.next();
+                    URLAddress urlAddress = entry.getValue();
                     long current = System.currentTimeMillis();
-                    if (current - removeTime >= cacheClearWaitingThresholdInMillis) {
-                        URLAddress urlAddress = removeURL.getUrlAddress();
-                        URLParam urlParam = removeURL.getUrlParam();
-                        if (current - urlAddress.getTimestamp() >= cacheClearWaitingThresholdInMillis) {
-                            stringAddress.remove(urlAddress.getRawAddress());
-                        }
-                        if (current - urlParam.getTimestamp() >= cacheClearWaitingThresholdInMillis) {
-                            stringParam.remove(urlParam.getRawParam());
-                        }
-                        it.remove();
-                        clearCount++;
+                    if (current - urlAddress.getTimestamp() >= cacheClearWaitingThresholdInMillis) {
+                        addressIt.remove();
+                        clearAddressCount++;
+                    }
+                }
+
+                Iterator<Map.Entry<String, URLParam>> paramIt = stringParam.entrySet().iterator();
+                while (paramIt.hasNext()) {
+                    Map.Entry<String, URLParam> entry = paramIt.next();
+                    URLParam urlParam = entry.getValue();
+                    long current = System.currentTimeMillis();
+                    if (current - urlParam.getTimestamp() >= cacheClearWaitingThresholdInMillis) {
+                        paramIt.remove();
+                        clearParamCount++;
                     }
                 }
             } catch (Throwable t) {
@@ -341,9 +306,9 @@ public abstract class CacheableFailbackRegistry extends FailbackRegistry {
             } finally {
                 semaphore.release();
             }
-            logger.info("Clear cached URLs, size " + clearCount);
+            logger.info("Clear cached URLs, address size " + clearAddressCount + " param size " + clearParamCount);
 
-            if (CollectionUtils.isNotEmptyMap(waitForRemove)) {
+            if (CollectionUtils.isNotEmptyMap(stringAddress) || CollectionUtils.isNotEmptyMap(stringParam)) {
                 // move to next schedule
                 if (semaphore.tryAcquire()) {
                     cacheRemovalScheduler.schedule(new RemovalTask(), cacheRemovalTaskIntervalInMillis, TimeUnit.MILLISECONDS);
