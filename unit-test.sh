@@ -18,7 +18,7 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-mvn --batch-mode -no-transfer-progress dependency:go-offline
+#mvn --batch-mode -no-transfer-progress dependency:go-offline
 
 data=$(find . -name pom.xml | cut -c 3- | rev | cut -c 9- | rev | sort)
 
@@ -32,7 +32,7 @@ for (( i = 0; i < ${#submodules[@]}; i++ )); do
   if [ ${submodules[$i]} != "" ]; then
     if [ $case_count -eq $current_role ]; then
       echo "execute ${submodules[$i]} test cases"
-      ./mvnw -pl ${submodules[$i]} -o --batch-mode --no-snapshot-updates -e --no-transfer-progress --fail-fast clean test verify -Pjacoco -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Dcheckstyle_unix.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true -DembeddedZookeeperPath=$(pwd)/.tmp/zookeeper
+      ./mvnw -pl ${submodules[$i]} --batch-mode --no-snapshot-updates -e --no-transfer-progress --fail-fast clean test verify -Pjacoco -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Dcheckstyle_unix.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true -DembeddedZookeeperPath=$(pwd)/.tmp/zookeeper
       if [ $? -ne 0 ]; then
           exit $?
       fi

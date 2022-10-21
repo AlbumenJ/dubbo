@@ -167,7 +167,7 @@ jobs:
 
   unit-test-fast:
     needs: [build-source, unit-test-prepare]
-    name: "Unit Test On ubuntu-20.04 (JDK: 17)"
+    name: "Unit Test On ubuntu-20.04 Fast"
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -182,7 +182,7 @@ jobs:
       - name: "Set up JDK ${{ matrix.jdk }}"
         uses: actions/setup-java@v1
         with:
-          java-version: 17
+          java-version: 11
       - uses: actions/cache@v2
         name: "Cache local Maven repository"
         with:
