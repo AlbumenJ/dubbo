@@ -18,14 +18,14 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-mvn dependency:go-offline
+mvn --batch-mode -no-transfer-progress dependency:go-offline
 
 data=$(find . -name pom.xml | cut -c 3- | rev | cut -c 9- | rev | sort)
 
 submodules=($data)
 
 case_count=0
-case_rage=$CASE_RAGE
+case_range=$CASE_RANGE
 current_role=$CURRENT_ROLE
 
 for (( i = 0; i < ${#submodules[@]}; i++ )); do
@@ -38,6 +38,6 @@ for (( i = 0; i < ${#submodules[@]}; i++ )); do
       fi
     fi
     case_count=$((case_count + 1))
-    case_count=$((case_count % case_rage))
+    case_count=$((case_count % case_range))
   fi
 done
