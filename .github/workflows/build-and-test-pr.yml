@@ -80,7 +80,7 @@ jobs:
           echo "dubbo version: $REVISION"
 
   unit-test-prepare:
-    name: " Preparation for Unit Test On ${{ matrix.os }}"
+    name: "Preparation for Unit Test"
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
