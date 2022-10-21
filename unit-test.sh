@@ -18,11 +18,12 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
+mvn dependency:go-offline
+
 data=$(find . -name pom.xml | cut -c 3- | rev | cut -c 9- | rev | sort)
 
 submodules=($data)
-CASE_RAGE=6
-CURRENT_ROLE=0
+
 case_count=0
 case_rage=$CASE_RAGE
 current_role=$CURRENT_ROLE
