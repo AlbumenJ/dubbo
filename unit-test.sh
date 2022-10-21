@@ -20,24 +20,46 @@
 
 #mvn --batch-mode -no-transfer-progress dependency:go-offline
 
-data=$(find . -name pom.xml | cut -c 3- | rev | cut -c 9- | rev | sort)
+data_1=$(find . -name pom.xml | cut -c 3- | rev | cut -c 9- | rev | sort)
 
-submodules=($data)
+submodules=($data_1)
+skip_modules[0]="dubbo-all"
+skip_modules[1]="dubbo-apache-release"
+skip_modules[2]="dubbo-core-spi"
+
+echo "Found ${#submodules[@]} poms from files"
+echo "Skip ${#skip_modules[@]} modules"
 
 case_count=0
-case_range=$CASE_RANGE
-current_role=$CURRENT_ROLE
+case_range=${CASE_RANGE:-6}
+current_role=${CURRENT_ROLE:-0}
 
 for (( i = 0; i < ${#submodules[@]}; i++ )); do
   if [ ${submodules[$i]} != "" ]; then
     if [ $case_count -eq $current_role ]; then
-      echo "execute ${submodules[$i]} test cases"
+      echo "Execute ${submodules[$i]} test cases $i / ${#submodules[@]}"
+      last_name=$(echo ${submodules[$i]} | awk -F'/' '{print $NF}')
+      should_skip=false
+      for (( j = 0; j < ${#skip_modules[@]}; j++ )); do
+        if [ "${skip_modules[$j]}" = "$last_name" ]; then
+          should_skip=true
+          break
+        fi
+      done
+      if [ $should_skip = true ]; then
+          echo "Skip ${submodules[$i]} due to it is not a valid module"
+          continue
+      fi
       ./mvnw -pl ${submodules[$i]} --batch-mode --no-snapshot-updates -e --no-transfer-progress --fail-fast clean test verify -Pjacoco -DskipTests=false -DskipIntegrationTests=false -Dcheckstyle.skip=false -Dcheckstyle_unix.skip=false -Drat.skip=false -Dmaven.javadoc.skip=true -DembeddedZookeeperPath=$(pwd)/.tmp/zookeeper
-      if [ $? -ne 0 ]; then
-          exit $?
+      exit_code=$?
+      if [ $exit_code -ne 0 ]; then
+        echo "Failed to execute ${submodules[$i]} test cases"
+          exit $exit_code
       fi
     fi
     case_count=$((case_count + 1))
     case_count=$((case_count % case_range))
   fi
 done
+
+echo "All Test passed."
