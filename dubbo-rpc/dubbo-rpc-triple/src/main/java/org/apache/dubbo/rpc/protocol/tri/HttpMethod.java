@@ -1,5 +1,7 @@
 package org.apache.dubbo.rpc.protocol.tri;
 
+import org.apache.dubbo.common.utils.ClassUtils;
+
 import io.netty.util.AsciiString;
 
 import static io.netty.util.internal.MathUtil.findNextPositivePowerOfTwo;
@@ -52,6 +54,14 @@ public class HttpMethod implements Comparable<HttpMethod> {
             System.out.println("Triple Catch ERROR!!!!" + t.toString());
             t.printStackTrace();
             throw t;
+        }
+
+        try {
+            ClassUtils.forName("io.netty.handler.codec.http.HttpMethod");
+        } catch (Throwable t) {
+            System.out.println("Triple Catch ERROR!!!!" + t.getMessage());
+            System.out.println("Triple Catch ERROR!!!!" + t.toString());
+            t.printStackTrace();
         }
     }
 
