@@ -57,7 +57,8 @@ public class HttpMethod implements Comparable<HttpMethod> {
         }
 
         try {
-            ClassUtils.forName("io.netty.handler.codec.http.HttpMethod");
+            Class<?> aClass = ClassUtils.forName("io.netty.handler.codec.http.HttpMethod");
+            Class.forName("io.netty.handler.codec.http.HttpMethod", true, aClass.getClassLoader());
         } catch (Throwable t) {
             System.out.println("Triple Catch ERROR!!!!" + t.getMessage());
             System.out.println("Triple Catch ERROR!!!!" + t.toString());
