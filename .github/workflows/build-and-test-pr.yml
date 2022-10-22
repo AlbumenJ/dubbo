@@ -109,6 +109,15 @@ jobs:
         with:
           name: "maven-file"
           path: /tmp/maven.zip
+      - name: "Pack Image"
+        if: always()
+        run: docker save dubbo/sample-test:8 | gzip > /tmp/samples-test.tar.gz
+      - name: "Upload Image"
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: "samples-test-image"
+          path: /tmp/samples-test.tar.gz
 
   integration-test-result:
     needs: [integration-test-job]
