@@ -167,7 +167,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        job_id: [1, 2, 3, 4, 5]
+        job_id: [2]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -211,6 +211,24 @@ jobs:
         with:
           name: test-result
           path: test/jobs/*-result*
+      - name: "Pack Project Files"
+        if: always()
+        run: 7z a /tmp/project.zip ${{ github.workspace }}/* -r
+      - name: "Upload Project Files"
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: "project-file"
+          path: /tmp/project.zip
+      - name: "Pack Maven"
+        if: always()
+        run: 7z a /tmp/maven.zip ~/.m2/* -r
+      - name: "Upload Maven"
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: "maven-file"
+          path: /tmp/maven.zip
 
   integration-test-result:
     needs: [integration-test-job]
