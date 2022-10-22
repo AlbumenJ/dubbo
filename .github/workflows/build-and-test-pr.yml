@@ -25,8 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: 'apache/dubbo-samples'
-          ref: master
+          repository: 'albumenj/dubbo-samples'
+          ref: 1022_verbose
       - name: "Prepare test list"
         run: |
           bash ./test/scripts/prepare-test.sh
@@ -51,8 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: 'apache/dubbo-samples'
-          ref: master
+          repository: 'albumenj/dubbo-samples'
+          ref: 1022_verbose
       - uses: actions/checkout@v2
         with:
           path: "./dubbo-project"
@@ -128,8 +128,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: 'apache/dubbo-samples'
-          ref: master
+          repository: 'albumenj/dubbo-samples'
+          ref: 1022_verbose
       - name: "Download test result"
         uses: actions/download-artifact@v2
         with:
