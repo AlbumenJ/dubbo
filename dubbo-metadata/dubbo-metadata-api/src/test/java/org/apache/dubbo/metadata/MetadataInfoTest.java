@@ -18,6 +18,7 @@ package org.apache.dubbo.metadata;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.utils.JsonUtils;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -71,7 +72,7 @@ public class MetadataInfoTest {
         MetadataInfo metadataInfo = new MetadataInfo("demo");
         metadataInfo.setApp("demo");
 
-        Assertions.assertEquals(EMPTY_REVISION, metadataInfo.calAndGetRevision());
+        Assertions.assertEquals(EMPTY_REVISION, metadataInfo.calAndGetRevision(ApplicationModel.defaultModel()));
     }
 
     @Test
@@ -118,29 +119,29 @@ public class MetadataInfoTest {
         MetadataInfo sameMetadataInfo = new MetadataInfo("demo");
         sameMetadataInfo.addService(url);
         assertEquals(metadataInfo, sameMetadataInfo);
-        assertEquals(metadataInfo.calAndGetRevision(), sameMetadataInfo.calAndGetRevision());
+        assertEquals(metadataInfo.calAndGetRevision(ApplicationModel.defaultModel()), sameMetadataInfo.calAndGetRevision(ApplicationModel.defaultModel()));
 
         // url with different params that are not counted in ServiceInfo
         MetadataInfo metadataInfoWithDifferentParam1 = new MetadataInfo("demo");
         metadataInfoWithDifferentParam1.addService(url.addParameter("delay", 6000));
         assertEquals(metadataInfo, metadataInfoWithDifferentParam1);
-        assertEquals(metadataInfo.calAndGetRevision(), metadataInfoWithDifferentParam1.calAndGetRevision());
+        assertEquals(metadataInfo.calAndGetRevision(ApplicationModel.defaultModel()), metadataInfoWithDifferentParam1.calAndGetRevision(ApplicationModel.defaultModel()));
         // url with different params that are counted in ServiceInfo
         MetadataInfo metadataInfoWithDifferentParam2 = new MetadataInfo("demo");
         metadataInfoWithDifferentParam2.addService(url.addParameter(TIMEOUT_KEY, 6000));
         assertNotEquals(metadataInfo, metadataInfoWithDifferentParam2);
-        assertNotEquals(metadataInfo.calAndGetRevision(), metadataInfoWithDifferentParam2.calAndGetRevision());
+        assertNotEquals(metadataInfo.calAndGetRevision(ApplicationModel.defaultModel()), metadataInfoWithDifferentParam2.calAndGetRevision(ApplicationModel.defaultModel()));
 
         MetadataInfo metadataInfoWithDifferentGroup = new MetadataInfo("demo");
         metadataInfoWithDifferentGroup.addService(url.addParameter(GROUP_KEY, "newGroup"));
         assertNotEquals(metadataInfo, metadataInfoWithDifferentGroup);
-        assertNotEquals(metadataInfo.calAndGetRevision(), metadataInfoWithDifferentGroup.calAndGetRevision());
+        assertNotEquals(metadataInfo.calAndGetRevision(ApplicationModel.defaultModel()), metadataInfoWithDifferentGroup.calAndGetRevision(ApplicationModel.defaultModel()));
 
         MetadataInfo metadataInfoWithDifferentServices = new MetadataInfo("demo");
         metadataInfoWithDifferentServices.addService(url);
         metadataInfoWithDifferentServices.addService(url2);
         assertNotEquals(metadataInfo, metadataInfoWithDifferentServices);
-        assertNotEquals(metadataInfo.calAndGetRevision(), metadataInfoWithDifferentServices.calAndGetRevision());
+        assertNotEquals(metadataInfo.calAndGetRevision(ApplicationModel.defaultModel()), metadataInfoWithDifferentServices.calAndGetRevision(ApplicationModel.defaultModel()));
     }
 
     @Test
@@ -149,7 +150,7 @@ public class MetadataInfoTest {
         metadataInfo.addService(url);
         metadataInfo.addService(url2);
         assertTrue(metadataInfo.updated);
-        metadataInfo.calAndGetRevision();
+        metadataInfo.calAndGetRevision(ApplicationModel.defaultModel());
         assertFalse(metadataInfo.updated);
         metadataInfo.removeService(url2);
         assertTrue(metadataInfo.updated);
@@ -201,15 +202,15 @@ public class MetadataInfoTest {
         // export normal url again
         metadataInfo.addService(url);
 
-        metadataInfo.calAndGetRevision();
+        metadataInfo.calAndGetRevision(ApplicationModel.defaultModel());
 
         metadataInfo.addService(url2);
 
-        metadataInfo.calAndGetRevision();
+        metadataInfo.calAndGetRevision(ApplicationModel.defaultModel());
 
         metadataInfo.addService(url3);
 
-        metadataInfo.calAndGetRevision();
+        metadataInfo.calAndGetRevision(ApplicationModel.defaultModel());
 
         Map<String, Object> ret  = JsonUtils.getJson().toJavaObject(metadataInfo.getContent(), Map.class);
         assertNull(ret.get("content"));

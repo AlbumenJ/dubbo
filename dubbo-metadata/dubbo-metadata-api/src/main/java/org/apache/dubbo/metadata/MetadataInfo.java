@@ -26,6 +26,7 @@ import org.apache.dubbo.common.utils.ArrayUtils;
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.common.utils.JsonUtils;
 import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.beans.Transient;
 import java.io.Serializable;
@@ -169,7 +170,7 @@ public class MetadataInfo implements Serializable {
      * <p>
      * Usage of this method is strictly restricted to certain points such as when during registration. Always try to use {@link this#getRevision()} instead.
      */
-    public synchronized String calAndGetRevision() {
+    public synchronized String calAndGetRevision(ApplicationModel applicationModel) {
         if (revision != null && !updated) {
             return revision;
         }
@@ -190,7 +191,7 @@ public class MetadataInfo implements Serializable {
                     logger.info(String.format("metadata revision changed: %s -> %s, app: %s, services: %d", this.revision, tempRevision, this.app, this.services.size()));
                 }
                 this.revision = tempRevision;
-                this.rawMetadataInfo = JsonUtils.getJson().toJson(this);
+                this.rawMetadataInfo = JsonUtils.getJson(applicationModel).toJson(this);
             }
         }
         return revision;

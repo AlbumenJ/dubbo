@@ -21,12 +21,21 @@ import org.apache.dubbo.common.json.JSON;
 import org.apache.dubbo.common.json.impl.FastJson2Impl;
 import org.apache.dubbo.common.json.impl.FastJsonImpl;
 import org.apache.dubbo.common.json.impl.GsonImpl;
+import org.apache.dubbo.rpc.model.ApplicationModel;
+import org.apache.dubbo.rpc.model.FrameworkModel;
 
 import java.util.Arrays;
 import java.util.List;
 
 public class JsonUtils {
     private static volatile JSON json;
+    public static JSON getJson(FrameworkModel frameworkModel) {
+        return getJson();
+    }
+
+    public static JSON getJson(ApplicationModel applicationModel) {
+        return getJson();
+    }
 
     public static JSON getJson() {
         if (json == null) {

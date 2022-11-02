@@ -22,6 +22,7 @@ import org.apache.dubbo.remoting.Channel;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 import org.apache.dubbo.rpc.protocol.dubbo.support.DemoService;
 
 import org.junit.jupiter.api.AfterEach;
@@ -95,7 +96,7 @@ public class TraceFilterTest {
         Invoker<DemoService> mockInvoker = mock(Invoker.class);
         Invocation mockInvocation = mock(Invocation.class);
         Result mockResult = mock(Result.class);
-        TraceFilter filter = new TraceFilter();
+        TraceFilter filter = new TraceFilter(ApplicationModel.defaultModel());
 
         given(mockInvoker.getInterface()).willReturn(DemoService.class);
         given(mockInvocation.getMethodName()).willReturn(method);

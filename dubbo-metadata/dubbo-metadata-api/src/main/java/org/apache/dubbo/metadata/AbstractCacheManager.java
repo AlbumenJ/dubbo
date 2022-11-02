@@ -24,6 +24,7 @@ import org.apache.dubbo.common.resource.Disposable;
 import org.apache.dubbo.common.utils.JsonUtils;
 import org.apache.dubbo.common.utils.LRUCache;
 import org.apache.dubbo.common.utils.NamedThreadFactory;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +40,12 @@ public abstract class AbstractCacheManager<V> implements Disposable {
 
     protected FileCacheStore cacheStore;
     protected LRUCache<String, V> cache;
+
+    private final ApplicationModel applicationModel;
+
+    public AbstractCacheManager(ApplicationModel applicationModel) {
+        this.applicationModel = applicationModel;
+    }
 
     protected void init(boolean enableFileCache, String filePath, String fileName, int entrySize, long fileSize, int interval, ScheduledExecutorService executorService) {
         this.cache = new LRUCache<>(entrySize);
@@ -116,6 +123,10 @@ public abstract class AbstractCacheManager<V> implements Disposable {
         }
     }
 
+    protected ApplicationModel getApplicationModel() {
+        return applicationModel;
+    }
+
     public static class CacheRefreshTask<V> implements Runnable {
         private final Logger logger = LoggerFactory.getLogger(getClass());
         private static final String DEFAULT_COMMENT = "Dubbo cache";
@@ -138,7 +149,7 @@ public abstract class AbstractCacheManager<V> implements Disposable {
             cache.lock();
             try {
                 for (Map.Entry<String, V> entry : cache.entrySet()) {
-                    properties.put(entry.getKey(), JsonUtils.getJson().toJson(entry.getValue()));
+                    properties.put(entry.getKey(), JsonUtils.getJson(cacheManager.getApplicationModel()).toJson(entry.getValue()));
                 }
             } finally {
                 cache.releaseLock();

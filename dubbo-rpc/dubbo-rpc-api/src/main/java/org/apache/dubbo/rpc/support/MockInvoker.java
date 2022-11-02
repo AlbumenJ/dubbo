@@ -32,6 +32,7 @@ import org.apache.dubbo.rpc.ProxyFactory;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.RpcInvocation;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Type;
@@ -52,18 +53,20 @@ final public class MockInvoker<T> implements Invoker<T> {
 
     private final URL url;
     private final Class<T> type;
+    private final ApplicationModel applicationModel;
 
     public MockInvoker(URL url, Class<T> type) {
         this.url = url;
         this.type = type;
         this.proxyFactory = url.getOrDefaultFrameworkModel().getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
+        this.applicationModel = url.getApplicationModel();
     }
 
-    public static Object parseMockValue(String mock) throws Exception {
-        return parseMockValue(mock, null);
+    public static Object parseMockValue(ApplicationModel applicationModel, String mock) throws Exception {
+        return parseMockValue(applicationModel, mock, null);
     }
 
-    public static Object parseMockValue(String mock, Type[] returnTypes) throws Exception {
+    public static Object parseMockValue(ApplicationModel applicationModel, String mock, Type[] returnTypes) throws Exception {
         Object value;
         if ("empty".equals(mock)) {
             value = ReflectUtils.getEmptyObject(returnTypes != null && returnTypes.length > 0 ? (Class<?>) returnTypes[0] : null);
@@ -79,11 +82,11 @@ final public class MockInvoker<T> implements Invoker<T> {
         } else if (returnTypes != null && returnTypes.length > 0 && returnTypes[0] == String.class) {
             value = mock;
         } else if (StringUtils.isNumeric(mock, false)) {
-            value = JsonUtils.getJson().toJavaObject(mock, Object.class);
+            value = JsonUtils.getJson(applicationModel).toJavaObject(mock, Object.class);
         } else if (mock.startsWith("{")) {
-            value = JsonUtils.getJson().toJavaObject(mock, Map.class);
+            value = JsonUtils.getJson(applicationModel).toJavaObject(mock, Map.class);
         } else if (mock.startsWith("[")) {
-            value = JsonUtils.getJson().toJavaList(mock, Object.class);
+            value = JsonUtils.getJson(applicationModel).toJavaList(mock, Object.class);
         } else {
             value = mock;
         }
@@ -108,7 +111,7 @@ final public class MockInvoker<T> implements Invoker<T> {
             mock = mock.substring(RETURN_PREFIX.length()).trim();
             try {
                 Type[] returnTypes = RpcUtils.getReturnTypes(invocation);
-                Object value = parseMockValue(mock, returnTypes);
+                Object value = parseMockValue(applicationModel, mock, returnTypes);
                 return AsyncRpcResult.newDefaultAsyncResult(value, invocation);
             } catch (Exception ew) {
                 throw new RpcException("mock return invoke error. method :" + invocation.getMethodName()

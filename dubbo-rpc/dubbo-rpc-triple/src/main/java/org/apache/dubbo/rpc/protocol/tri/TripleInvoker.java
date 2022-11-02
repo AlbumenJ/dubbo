@@ -36,6 +36,7 @@ import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.TimeoutCountDown;
 import org.apache.dubbo.rpc.TriRpcStatus;
 import org.apache.dubbo.rpc.model.ConsumerModel;
+import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.model.MethodDescriptor;
 import org.apache.dubbo.rpc.model.PackableMethod;
 import org.apache.dubbo.rpc.model.ServiceDescriptor;
@@ -82,6 +83,7 @@ public class TripleInvoker<T> extends AbstractInvoker<T> {
     private final ExecutorService streamExecutor;
     private final String acceptEncodings;
     private final TripleWriteQueue writeQueue = new TripleWriteQueue();
+    private final FrameworkModel frameworkModel;
 
     public TripleInvoker(Class<T> serviceType,
         URL url,
@@ -94,6 +96,7 @@ public class TripleInvoker<T> extends AbstractInvoker<T> {
         this.connection = connectionManager.connect(url);
         this.acceptEncodings = acceptEncodings;
         this.streamExecutor = streamExecutor;
+        this.frameworkModel = url.getOrDefaultFrameworkModel();
     }
 
     private static AsciiString getSchemeFromUrl(URL url) {
@@ -234,7 +237,7 @@ public class TripleInvoker<T> extends AbstractInvoker<T> {
         Objects.requireNonNull(methodDescriptor,
             "MethodDescriptor not found for" + methodName + " params:" + Arrays.toString(
                 invocation.getCompatibleParamSignatures()));
-        final RequestMetadata meta = new RequestMetadata();
+        final RequestMetadata meta = new RequestMetadata(frameworkModel);
         final URL url = getUrl();
         if (methodDescriptor instanceof PackableMethod) {
             meta.packableMethod = (PackableMethod) methodDescriptor;

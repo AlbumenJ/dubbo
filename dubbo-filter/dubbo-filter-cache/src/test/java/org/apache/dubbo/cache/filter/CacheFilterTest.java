@@ -26,6 +26,7 @@ import org.apache.dubbo.rpc.AsyncRpcResult;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcInvocation;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,7 +40,7 @@ import static org.mockito.Mockito.mock;
 
 public class CacheFilterTest {
     private RpcInvocation invocation;
-    private CacheFilter cacheFilter = new CacheFilter();
+    private CacheFilter cacheFilter = new CacheFilter(ApplicationModel.defaultModel());
     private Invoker<?> invoker = mock(Invoker.class);
     private Invoker<?> invoker1 = mock(Invoker.class);
     private Invoker<?> invoker2 = mock(Invoker.class);

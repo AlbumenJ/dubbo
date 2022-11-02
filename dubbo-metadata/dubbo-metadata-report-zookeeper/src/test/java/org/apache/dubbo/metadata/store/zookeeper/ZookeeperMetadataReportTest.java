@@ -315,14 +315,14 @@ public class ZookeeperMetadataReportTest {
         MetadataInfo metadataInfo = new MetadataInfo(appName);
         metadataInfo.addService(url);
 
-        SubscriberMetadataIdentifier identifier = new SubscriberMetadataIdentifier(appName, metadataInfo.calAndGetRevision());
+        SubscriberMetadataIdentifier identifier = new SubscriberMetadataIdentifier(appName, metadataInfo.calAndGetRevision(ApplicationModel.defaultModel()));
         MetadataInfo appMetadata = zookeeperMetadataReport.getAppMetadata(identifier, Collections.emptyMap());
         Assertions.assertNull(appMetadata);
 
         zookeeperMetadataReport.publishAppMetadata(identifier, metadataInfo);
         appMetadata = zookeeperMetadataReport.getAppMetadata(identifier, Collections.emptyMap());
         Assertions.assertNotNull(appMetadata);
-        Assertions.assertEquals(appMetadata.calAndGetRevision(), metadataInfo.calAndGetRevision());
+        Assertions.assertEquals(appMetadata.calAndGetRevision(ApplicationModel.defaultModel()), metadataInfo.calAndGetRevision(ApplicationModel.defaultModel()));
 
     }
 }

@@ -22,6 +22,7 @@ import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.RpcContext;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -58,16 +59,19 @@ public final class AccessLogData {
      */
     private Map<String, Object> data;
 
+    private final ApplicationModel applicationModel;
+
     /**
      * Default constructor.
      */
-    private AccessLogData() {
+    private AccessLogData(ApplicationModel applicationModel) {
         RpcContext context = RpcContext.getServiceContext();
         data = new HashMap<>();
         setLocalHost(context.getLocalHost());
         setLocalPort(context.getLocalPort());
         setRemoteHost(context.getRemoteHost());
         setRemotePort(context.getRemotePort());
+        this.applicationModel = applicationModel;
     }
 
     /**
@@ -75,8 +79,8 @@ public final class AccessLogData {
      *
      * @return instance of AccessLogData
      */
-    public static AccessLogData newLogData() {
-        return new AccessLogData();
+    public static AccessLogData newLogData(ApplicationModel applicationModel) {
+        return new AccessLogData(applicationModel);
     }
 
 
@@ -248,7 +252,7 @@ public final class AccessLogData {
 
         Object[] args = get(ARGUMENTS) != null ? (Object[]) get(ARGUMENTS) : null;
         if (args != null && args.length > 0) {
-            sn.append(JsonUtils.getJson().toJson(args));
+            sn.append(JsonUtils.getJson(applicationModel).toJson(args));
         }
 
         return sn.toString();

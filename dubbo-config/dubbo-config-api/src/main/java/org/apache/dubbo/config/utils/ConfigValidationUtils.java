@@ -366,7 +366,7 @@ public class ConfigValidationUtils {
             normalizedMock = normalizedMock.substring(RETURN_PREFIX.length()).trim();
             try {
                 //Check whether the mock value is legal, if it is illegal, throw exception
-                MockInvoker.parseMockValue(normalizedMock);
+                MockInvoker.parseMockValue(config.getApplicationModel(), normalizedMock);
             } catch (Exception e) {
                 throw new IllegalStateException("Illegal mock return in <dubbo:service/reference ... " +
                     "mock=\"" + mock + "\" />");

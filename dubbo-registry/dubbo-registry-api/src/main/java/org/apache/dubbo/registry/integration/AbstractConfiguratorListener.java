@@ -106,7 +106,7 @@ public abstract class AbstractConfiguratorListener implements ConfigurationListe
         List<URL> urls;
         try {
             // parseConfigurators will recognize app/service config automatically.
-            urls = ConfigParser.parseConfigurators(rawConfig);
+            urls = ConfigParser.parseConfigurators(moduleModel, rawConfig);
         } catch (Exception e) {
             // 1-14 - Failed to parse raw dynamic config.
 

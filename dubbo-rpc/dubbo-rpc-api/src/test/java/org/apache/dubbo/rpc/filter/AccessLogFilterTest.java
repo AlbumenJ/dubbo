@@ -22,6 +22,7 @@ import org.apache.dubbo.common.utils.LogUtil;
 import org.apache.dubbo.rpc.Filter;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 import org.apache.dubbo.rpc.support.AccessLogData;
 import org.apache.dubbo.rpc.support.MockInvocation;
 import org.apache.dubbo.rpc.support.MyInvoker;
@@ -41,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class AccessLogFilterTest {
 
-    Filter accessLogFilter = new AccessLogFilter();
+    Filter accessLogFilter = new AccessLogFilter(ApplicationModel.defaultModel());
 
     // Test filter won't throw an exception
     @Test

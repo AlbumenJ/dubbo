@@ -22,6 +22,7 @@ import org.apache.dubbo.metadata.definition.model.MethodDefinition;
 import org.apache.dubbo.metadata.definition.model.ServiceDefinition;
 import org.apache.dubbo.metadata.definition.model.TypeDefinition;
 import org.apache.dubbo.metadata.definition.util.ClassUtils;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -112,9 +113,10 @@ public final class ServiceDefinitionBuilder {
      *
      * @return Service description
      */
+    @Deprecated
     public static String schema(final Class<?> clazz) {
         ServiceDefinition sd = build(clazz);
-        return JsonUtils.getJson().toJson(sd);
+        return JsonUtils.getJson(ApplicationModel.defaultModel()).toJson(sd);
     }
 
     private ServiceDefinitionBuilder() {

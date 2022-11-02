@@ -35,6 +35,7 @@ import org.apache.dubbo.remoting.zookeeper.DataListener;
 import org.apache.dubbo.remoting.zookeeper.EventType;
 import org.apache.dubbo.remoting.zookeeper.ZookeeperClient;
 import org.apache.dubbo.remoting.zookeeper.ZookeeperTransporter;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import org.apache.zookeeper.data.Stat;
 
@@ -63,6 +64,7 @@ public class ZookeeperMetadataReport extends AbstractMetadataReport {
 
     private Map<String, MappingDataListener> casListenerMap = new ConcurrentHashMap<>();
 
+    private final ApplicationModel applicationModel;
 
     public ZookeeperMetadataReport(URL url, ZookeeperTransporter zookeeperTransporter) {
         super(url);
@@ -75,6 +77,7 @@ public class ZookeeperMetadataReport extends AbstractMetadataReport {
         }
         this.root = group;
         zkClient = zookeeperTransporter.connect(url);
+        applicationModel = url.getApplicationModel();
     }
 
     protected String toRootDir() {
@@ -155,7 +158,7 @@ public class ZookeeperMetadataReport extends AbstractMetadataReport {
     @Override
     public MetadataInfo getAppMetadata(SubscriberMetadataIdentifier identifier, Map<String, String> instanceMetadata) {
         String content = zkClient.getContent(getNodePath(identifier));
-        return JsonUtils.getJson().toJavaObject(content, MetadataInfo.class);
+        return JsonUtils.getJson(applicationModel).toJavaObject(content, MetadataInfo.class);
     }
 
     @Override

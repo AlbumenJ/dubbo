@@ -35,6 +35,7 @@ import org.apache.dubbo.metadata.report.identifier.MetadataIdentifier;
 import org.apache.dubbo.metadata.report.identifier.ServiceMetadataIdentifier;
 import org.apache.dubbo.metadata.report.identifier.SubscriberMetadataIdentifier;
 import org.apache.dubbo.metadata.report.support.AbstractMetadataReport;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
@@ -80,10 +81,13 @@ public class NacosMetadataReport extends AbstractMetadataReport {
 
     private MD5Utils md5Utils = new MD5Utils();
 
+    private final ApplicationModel applicationModel;
+
     public NacosMetadataReport(URL url) {
         super(url);
         this.configService = buildConfigService(url);
         group = url.getParameter(GROUP_KEY, DEFAULT_ROOT);
+        this.applicationModel = url.getApplicationModel();
     }
 
     public NacosConfigServiceWrapper buildConfigService(URL url) {
@@ -167,7 +171,7 @@ public class NacosMetadataReport extends AbstractMetadataReport {
     public MetadataInfo getAppMetadata(SubscriberMetadataIdentifier identifier, Map<String, String> instanceMetadata) {
         try {
             String content = configService.getConfig(identifier.getApplication(), identifier.getRevision(), 3000L);
-            return JsonUtils.getJson().toJavaObject(content, MetadataInfo.class);
+            return JsonUtils.getJson(applicationModel).toJavaObject(content, MetadataInfo.class);
         } catch (NacosException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }

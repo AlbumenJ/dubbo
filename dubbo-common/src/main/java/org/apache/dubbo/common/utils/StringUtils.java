@@ -19,6 +19,7 @@ package org.apache.dubbo.common.utils;
 import org.apache.dubbo.common.io.UnsafeStringWriter;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -1019,7 +1020,7 @@ public final class StringUtils {
         }
     }
 
-    public static String toArgumentString(Object[] args) {
+    public static String toArgumentString(ApplicationModel applicationModel, Object[] args) {
         StringBuilder buf = new StringBuilder();
         for (Object arg : args) {
             if (buf.length() > 0) {
@@ -1029,7 +1030,7 @@ public final class StringUtils {
                 buf.append(arg);
             } else {
                 try {
-                    buf.append(JsonUtils.getJson().toJson(arg));
+                    buf.append(JsonUtils.getJson(applicationModel).toJson(arg));
                 } catch (Exception e) {
                     logger.warn(e.getMessage(), e);
                     buf.append(arg);

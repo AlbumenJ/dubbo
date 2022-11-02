@@ -17,11 +17,10 @@
 
 package org.apache.dubbo.rpc.protocol.tri.stream;
 
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.handler.codec.http2.Http2StreamChannel;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.rpc.TriRpcStatus;
 import org.apache.dubbo.rpc.model.ApplicationModel;
+import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.model.MethodDescriptor;
 import org.apache.dubbo.rpc.model.ModuleServiceRepository;
 import org.apache.dubbo.rpc.model.ServiceDescriptor;
@@ -41,9 +40,11 @@ import org.apache.dubbo.rpc.protocol.tri.transport.TripleWriteQueue;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpScheme;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
+import io.netty.handler.codec.http2.Http2StreamChannel;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -78,7 +79,7 @@ class TripleClientStreamTest {
         TripleClientStream stream = new TripleClientStream(url.getOrDefaultFrameworkModel(),
             ImmediateEventExecutor.INSTANCE, writeQueue, listener, http2StreamChannel);
 
-        final RequestMetadata requestMetadata = new RequestMetadata();
+        final RequestMetadata requestMetadata = new RequestMetadata(FrameworkModel.defaultModel());
         requestMetadata.method = methodDescriptor;
         requestMetadata.scheme = TripleConstant.HTTP_SCHEME;
         requestMetadata.compressor = Compressor.NONE;

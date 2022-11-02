@@ -83,7 +83,7 @@ public abstract class AbstractServiceDiscovery implements ServiceDiscovery {
         this.registryURL = registryURL;
         this.metadataInfo = new MetadataInfo(serviceName);
         boolean localCacheEnabled = registryURL.getParameter(REGISTRY_LOCAL_FILE_CACHE_ENABLED, true);
-        this.metaCacheManager = new MetaCacheManager(localCacheEnabled, getCacheNameSuffix(),
+        this.metaCacheManager = new MetaCacheManager(applicationModel, localCacheEnabled, getCacheNameSuffix(),
             applicationModel.getFrameworkModel().getBeanFactory()
                 .getBean(FrameworkExecutorRepository.class).getCacheRefreshingScheduledExecutor());
     }
@@ -276,7 +276,7 @@ public abstract class AbstractServiceDiscovery implements ServiceDiscovery {
     protected boolean calOrUpdateInstanceRevision(ServiceInstance instance) {
         String existingInstanceRevision = getExportedServicesRevision(instance);
         MetadataInfo metadataInfo = instance.getServiceMetadata();
-        String newRevision = metadataInfo.calAndGetRevision();
+        String newRevision = metadataInfo.calAndGetRevision(instance.getApplicationModel());
         if (!newRevision.equals(existingInstanceRevision)) {
             instance.getMetadata().put(EXPORTED_SERVICES_REVISION_PROPERTY_NAME, metadataInfo.getRevision());
             return true;

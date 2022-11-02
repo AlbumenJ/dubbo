@@ -27,6 +27,7 @@ import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.io.Serializable;
 
@@ -69,6 +70,12 @@ public class CacheFilter implements Filter {
 
     private CacheFactory cacheFactory;
 
+    private final ApplicationModel applicationModel;
+
+    public CacheFilter(ApplicationModel applicationModel) {
+        this.applicationModel = applicationModel;
+    }
+
     /**
      * Dubbo will populate and set the cache factory instance based on service/method/consumer/provider configured
      * cache attribute value. Dubbo will search for the class name implementing configured <b>cache</b> in file org.apache.dubbo.cache.CacheFactory
@@ -98,7 +105,7 @@ public class CacheFilter implements Filter {
         if (cache == null) {
             return invoker.invoke(invocation);
         }
-        String key = StringUtils.toArgumentString(invocation.getArguments());
+        String key = StringUtils.toArgumentString(applicationModel, invocation.getArguments());
         Object value = cache.get(key);
         return (value != null) ? onCacheValuePresent(invocation, value) : onCacheValueNotPresent(invoker, invocation, cache, key);
     }

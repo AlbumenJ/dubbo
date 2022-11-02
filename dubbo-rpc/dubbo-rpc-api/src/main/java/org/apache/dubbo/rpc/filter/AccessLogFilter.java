@@ -27,6 +27,7 @@ import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 import org.apache.dubbo.rpc.support.AccessLogData;
 
 import java.io.File;
@@ -82,11 +83,14 @@ public class AccessLogFilter implements Filter {
 
     private static final String LINE_SEPARATOR = "line.separator";
 
+    private final ApplicationModel applicationModel;
+
     /**
      * Default constructor initialize demon thread for writing into access log file with names with access log key
      * defined in url <b>accesslog</b>
      */
-    public AccessLogFilter() {
+    public AccessLogFilter(ApplicationModel applicationModel) {
+        this.applicationModel = applicationModel;
     }
 
     /**
@@ -181,7 +185,7 @@ public class AccessLogFilter implements Filter {
     }
 
     private AccessLogData buildAccessLogData(Invoker<?> invoker, Invocation inv) {
-        AccessLogData logData = AccessLogData.newLogData();
+        AccessLogData logData = AccessLogData.newLogData(applicationModel);
         logData.setServiceName(invoker.getInterface().getName());
         logData.setMethodName(inv.getMethodName());
         logData.setVersion(invoker.getUrl().getVersion());

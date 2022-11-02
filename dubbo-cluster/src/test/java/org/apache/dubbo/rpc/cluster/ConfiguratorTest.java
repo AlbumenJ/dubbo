@@ -20,6 +20,8 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.rpc.cluster.configurator.absent.AbsentConfigurator;
 import org.apache.dubbo.rpc.cluster.configurator.override.OverrideConfigurator;
 import org.apache.dubbo.rpc.cluster.configurator.parser.ConfigParser;
+import org.apache.dubbo.rpc.model.ApplicationModel;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +42,7 @@ public class ConfiguratorTest {
 
         String configData = "[\"override://0.0.0.0/com.xx.Service?category=configurators&timeout=6666&disabled=true&dynamic=false&enabled=true&group=dubbo&priority=2&version=1.0\"" +
             ", \"absent://0.0.0.0/com.xx.Service?category=configurators&timeout=6666&disabled=true&dynamic=false&enabled=true&group=dubbo&priority=1&version=1.0\" ]";
-        List<URL> urls = ConfigParser.parseConfigurators(configData);
+        List<URL> urls = ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), configData);
         Optional<List<Configurator>> optionalList = Configurator.toConfigurators(urls);
         Assertions.assertTrue(optionalList.isPresent());
         List<Configurator> configurators = optionalList.get();

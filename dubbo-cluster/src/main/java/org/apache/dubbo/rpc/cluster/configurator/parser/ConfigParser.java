@@ -22,6 +22,7 @@ import org.apache.dubbo.common.utils.JsonUtils;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.rpc.cluster.configurator.parser.model.ConfigItem;
 import org.apache.dubbo.rpc.cluster.configurator.parser.model.ConfiguratorConfig;
+import org.apache.dubbo.rpc.model.ModuleModel;
 
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -40,9 +41,9 @@ import static org.apache.dubbo.rpc.cluster.Constants.OVERRIDE_PROVIDERS_KEY;
  */
 public class ConfigParser {
 
-    public static List<URL> parseConfigurators(String rawConfig) {
+    public static List<URL> parseConfigurators(ModuleModel moduleModel, String rawConfig) {
         // compatible url JsonArray, such as [ "override://xxx", "override://xxx" ]
-        List<URL> compatibleUrls = parseJsonArray(rawConfig);
+        List<URL> compatibleUrls = parseJsonArray(moduleModel, rawConfig);
         if (CollectionUtils.isNotEmpty(compatibleUrls)) {
             return compatibleUrls;
         }
@@ -62,10 +63,11 @@ public class ConfigParser {
         return urls;
     }
 
-    private static List<URL> parseJsonArray(String rawConfig) {
+    private static List<URL> parseJsonArray(ModuleModel moduleModel, String rawConfig) {
         List<URL> urls = new ArrayList<>();
         try {
-            List<String> list = JsonUtils.getJson().toJavaList(rawConfig, String.class);
+            List<String> list = JsonUtils.getJson(moduleModel.getApplicationModel())
+                .toJavaList(rawConfig, String.class);
             if (!CollectionUtils.isEmpty(list)) {
                 list.forEach(u -> urls.add(URL.valueOf(u)));
             }

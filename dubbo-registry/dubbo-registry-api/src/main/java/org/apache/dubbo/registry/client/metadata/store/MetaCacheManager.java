@@ -20,6 +20,7 @@ import org.apache.dubbo.common.utils.JsonUtils;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.metadata.AbstractCacheManager;
 import org.apache.dubbo.metadata.MetadataInfo;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 import org.apache.dubbo.rpc.model.ScopeModel;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,11 +32,14 @@ public class MetaCacheManager extends AbstractCacheManager<MetadataInfo> {
     private static final String DEFAULT_FILE_NAME = ".metadata";
     private static final int DEFAULT_ENTRY_SIZE = 100;
 
+    // FIXME this class cannot be instantiated by bean manager, should this method be removed
     public static MetaCacheManager getInstance(ScopeModel scopeModel) {
         return scopeModel.getBeanFactory().getOrRegisterBean(MetaCacheManager.class);
     }
 
-    public MetaCacheManager(boolean enableFileCache, String registryName, ScheduledExecutorService executorService) {
+    public MetaCacheManager(ApplicationModel applicationModel,
+                            boolean enableFileCache, String registryName, ScheduledExecutorService executorService) {
+        super(applicationModel);
         String filePath = System.getProperty("dubbo.meta.cache.filePath");
         String fileName = System.getProperty("dubbo.meta.cache.fileName");
         if (StringUtils.isEmpty(fileName)) {
@@ -58,12 +62,12 @@ public class MetaCacheManager extends AbstractCacheManager<MetadataInfo> {
 
     // for unit test only
     public MetaCacheManager() {
-        this(true, "", null);
+        this(ApplicationModel.defaultModel(), true, "", null);
     }
 
     @Override
     protected MetadataInfo toValueType(String value) {
-        return JsonUtils.getJson().toJavaObject(value, MetadataInfo.class);
+        return JsonUtils.getJson(getApplicationModel()).toJavaObject(value, MetadataInfo.class);
     }
 
     @Override

@@ -16,6 +16,8 @@
  */
 package org.apache.dubbo.common.utils;
 
+import org.apache.dubbo.rpc.model.ApplicationModel;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -381,7 +383,7 @@ public class StringUtilsTest {
 
     @Test
     public void testToArgumentString() throws Exception {
-        String s = StringUtils.toArgumentString(new Object[]{"a", 0, Collections.singletonMap("enabled", true)});
+        String s = StringUtils.toArgumentString(ApplicationModel.defaultModel(), new Object[]{"a", 0, Collections.singletonMap("enabled", true)});
         assertThat(s, containsString("a,"));
         assertThat(s, containsString("0,"));
         assertThat(s, containsString("{\"enabled\":true}"));

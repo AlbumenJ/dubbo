@@ -35,23 +35,23 @@ public class MockInvokerTest {
 
     @Test
     public void testParseMockValue() throws Exception {
-        Assertions.assertNull(MockInvoker.parseMockValue("null"));
-        Assertions.assertNull(MockInvoker.parseMockValue("empty"));
+        Assertions.assertNull(MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "null"));
+        Assertions.assertNull(MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "empty"));
 
-        Assertions.assertTrue((Boolean) MockInvoker.parseMockValue("true"));
-        Assertions.assertFalse((Boolean) MockInvoker.parseMockValue("false"));
+        Assertions.assertTrue((Boolean) MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "true"));
+        Assertions.assertFalse((Boolean) MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "false"));
 
-        Assertions.assertEquals(123, MockInvoker.parseMockValue("123"));
-        Assertions.assertEquals("foo", MockInvoker.parseMockValue("foo"));
-        Assertions.assertEquals("foo", MockInvoker.parseMockValue("\"foo\""));
-        Assertions.assertEquals("foo", MockInvoker.parseMockValue("\'foo\'"));
+        Assertions.assertEquals(123, MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "123"));
+        Assertions.assertEquals("foo", MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "foo"));
+        Assertions.assertEquals("foo", MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "\"foo\""));
+        Assertions.assertEquals("foo", MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "\'foo\'"));
 
         Assertions.assertEquals(
-                new HashMap<>(), MockInvoker.parseMockValue("{}"));
+                new HashMap<>(), MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "{}"));
         Assertions.assertEquals(
-                new ArrayList<>(), MockInvoker.parseMockValue("[]"));
+                new ArrayList<>(), MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "[]"));
         Assertions.assertEquals("foo",
-                MockInvoker.parseMockValue("foo", new Type[]{String.class}));
+                MockInvoker.parseMockValue(ApplicationModel.defaultModel(), "foo", new Type[]{String.class}));
     }
 
     @Test

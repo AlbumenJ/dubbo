@@ -18,6 +18,7 @@
 package org.apache.dubbo.rpc.protocol.tri;
 
 import org.apache.dubbo.rpc.CancellationContext;
+import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.model.MethodDescriptor;
 import org.apache.dubbo.rpc.model.PackableMethod;
 import org.apache.dubbo.rpc.protocol.tri.compressor.Compressor;
@@ -48,6 +49,11 @@ public class RequestMetadata {
     public PackableMethod packableMethod;
     public Map<String, Object> attachments;
     public boolean convertNoLowerHeader;
+    private FrameworkModel frameworkModel;
+
+    public RequestMetadata(FrameworkModel frameworkModel) {
+        this.frameworkModel = frameworkModel;
+    }
 
     public DefaultHttp2Headers toHeaders() {
         DefaultHttp2Headers header = new DefaultHttp2Headers(false);
@@ -70,7 +76,7 @@ public class RequestMetadata {
             setIfNotNull(header, TripleHeaderEnum.GRPC_ENCODING.getHeader(),
                 compressor.getMessageEncoding());
         }
-        StreamUtils.convertAttachment(header, attachments, convertNoLowerHeader);
+        StreamUtils.convertAttachment(frameworkModel, header, attachments, convertNoLowerHeader);
         return header;
     }
 

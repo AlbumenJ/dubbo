@@ -246,7 +246,7 @@ public class TripleClientStream extends AbstractStream implements ClientStream {
             }
             if (obj instanceof String) {
                 String json = TriRpcStatus.decodeMessage((String) obj);
-                Map<String, String> map = JsonUtils.getJson().toJavaObject(json, Map.class);
+                Map<String, String> map = JsonUtils.getJson(frameworkModel).toJavaObject(json, Map.class);
                 map.forEach((originalKey, lowerCaseKey) -> {
                     Object val = attachments.remove(lowerCaseKey);
                     if (val != null) {

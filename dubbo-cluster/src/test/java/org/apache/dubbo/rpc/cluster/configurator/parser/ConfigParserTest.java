@@ -18,6 +18,7 @@ package org.apache.dubbo.rpc.cluster.configurator.parser;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.rpc.cluster.configurator.parser.model.ConfiguratorConfig;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -58,7 +59,7 @@ public class ConfigParserTest {
     @Test
     public void parseConfiguratorsServiceNoAppTest() throws Exception {
         try (InputStream yamlStream = this.getClass().getResourceAsStream("/ServiceNoApp.yml")) {
-            List<URL> urls = ConfigParser.parseConfigurators(streamToString(yamlStream));
+            List<URL> urls = ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), streamToString(yamlStream));
             Assertions.assertNotNull(urls);
             Assertions.assertEquals(2, urls.size());
             URL url = urls.get(0);
@@ -70,7 +71,7 @@ public class ConfigParserTest {
     @Test
     public void parseConfiguratorsServiceGroupVersionTest() throws Exception {
         try (InputStream yamlStream = this.getClass().getResourceAsStream("/ServiceGroupVersion.yml")) {
-            List<URL> urls = ConfigParser.parseConfigurators(streamToString(yamlStream));
+            List<URL> urls = ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), streamToString(yamlStream));
             Assertions.assertNotNull(urls);
             Assertions.assertEquals(1, urls.size());
             URL url = urls.get(0);
@@ -82,7 +83,7 @@ public class ConfigParserTest {
     @Test
     public void parseConfiguratorsServiceMultiAppsTest() throws IOException {
         try (InputStream yamlStream = this.getClass().getResourceAsStream("/ServiceMultiApps.yml")) {
-            List<URL> urls = ConfigParser.parseConfigurators(streamToString(yamlStream));
+            List<URL> urls = ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), streamToString(yamlStream));
             Assertions.assertNotNull(urls);
             Assertions.assertEquals(4, urls.size());
             URL url = urls.get(0);
@@ -96,7 +97,7 @@ public class ConfigParserTest {
     public void parseConfiguratorsServiceNoRuleTest() {
         Assertions.assertThrows(IllegalStateException.class, () -> {
             try (InputStream yamlStream = this.getClass().getResourceAsStream("/ServiceNoRule.yml")) {
-                ConfigParser.parseConfigurators(streamToString(yamlStream));
+                ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), streamToString(yamlStream));
                 Assertions.fail();
             }
         });
@@ -106,7 +107,7 @@ public class ConfigParserTest {
     public void parseConfiguratorsAppMultiServicesTest() throws IOException {
         try (InputStream yamlStream = this.getClass().getResourceAsStream("/AppMultiServices.yml")) {
             String yamlFile = streamToString(yamlStream);
-            List<URL> urls = ConfigParser.parseConfigurators(yamlFile);
+            List<URL> urls = ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), yamlFile);
             Assertions.assertNotNull(urls);
             Assertions.assertEquals(4, urls.size());
             URL url = urls.get(0);
@@ -122,7 +123,7 @@ public class ConfigParserTest {
     @Test
     public void parseConfiguratorsAppAnyServicesTest() throws IOException {
         try (InputStream yamlStream = this.getClass().getResourceAsStream("/AppAnyServices.yml")) {
-            List<URL> urls = ConfigParser.parseConfigurators(streamToString(yamlStream));
+            List<URL> urls = ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), streamToString(yamlStream));
             Assertions.assertNotNull(urls);
             Assertions.assertEquals(2, urls.size());
             URL url = urls.get(0);
@@ -137,7 +138,7 @@ public class ConfigParserTest {
     @Test
     public void parseConfiguratorsAppNoServiceTest() throws IOException {
         try (InputStream yamlStream = this.getClass().getResourceAsStream("/AppNoService.yml")) {
-            List<URL> urls = ConfigParser.parseConfigurators(streamToString(yamlStream));
+            List<URL> urls = ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), streamToString(yamlStream));
             Assertions.assertNotNull(urls);
             Assertions.assertEquals(1, urls.size());
             URL url = urls.get(0);
@@ -152,7 +153,7 @@ public class ConfigParserTest {
     @Test
     public void parseConsumerSpecificProvidersTest() throws IOException {
         try (InputStream yamlStream = this.getClass().getResourceAsStream("/ConsumerSpecificProviders.yml")) {
-            List<URL> urls = ConfigParser.parseConfigurators(streamToString(yamlStream));
+            List<URL> urls = ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), streamToString(yamlStream));
             Assertions.assertNotNull(urls);
             Assertions.assertEquals(1, urls.size());
             URL url = urls.get(0);
@@ -170,7 +171,7 @@ public class ConfigParserTest {
 
         String configData = "[\"override://0.0.0.0/com.xx.Service?category=configurators&timeout=6666&disabled=true&dynamic=false&enabled=true&group=dubbo&priority=1&version=1.0\" ]";
 
-        List<URL> urls = ConfigParser.parseConfigurators(configData);
+        List<URL> urls = ConfigParser.parseConfigurators(ApplicationModel.defaultModel().getDefaultModule(), configData);
 
         Assertions.assertNotNull(urls);
         Assertions.assertEquals(1, urls.size());

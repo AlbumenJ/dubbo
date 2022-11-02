@@ -18,6 +18,7 @@ package org.apache.dubbo.metadata;
 
 import org.apache.dubbo.common.utils.JsonUtils;
 import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 import org.apache.dubbo.rpc.model.ScopeModel;
 
 import java.util.HashSet;
@@ -31,11 +32,14 @@ public class MappingCacheManager extends AbstractCacheManager<Set<String>> {
     private static final String DEFAULT_FILE_NAME = ".mapping";
     private static final int DEFAULT_ENTRY_SIZE = 10000;
 
+    // FIXME this class cannot be instantiated by bean manager, should this method be removed
     public static MappingCacheManager getInstance(ScopeModel scopeModel) {
         return scopeModel.getBeanFactory().getOrRegisterBean(MappingCacheManager.class);
     }
 
-    public MappingCacheManager(boolean enableFileCache, String name, ScheduledExecutorService executorService) {
+    public MappingCacheManager(ApplicationModel applicationModel,
+                               boolean enableFileCache, String name, ScheduledExecutorService executorService) {
+        super(applicationModel);
         String filePath = System.getProperty("dubbo.mapping.cache.filePath");
         String fileName = System.getProperty("dubbo.mapping.cache.fileName");
         if (StringUtils.isEmpty(fileName)) {
@@ -58,7 +62,7 @@ public class MappingCacheManager extends AbstractCacheManager<Set<String>> {
 
     @Override
     protected Set<String> toValueType(String value) {
-        return new HashSet<>(JsonUtils.getJson().toJavaList(value, String.class));
+        return new HashSet<>(JsonUtils.getJson(getApplicationModel()).toJavaList(value, String.class));
     }
 
     @Override

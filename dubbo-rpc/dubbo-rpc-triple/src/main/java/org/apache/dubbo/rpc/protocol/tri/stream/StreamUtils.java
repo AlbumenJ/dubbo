@@ -21,6 +21,7 @@ import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.utils.JsonUtils;
 import org.apache.dubbo.rpc.TriRpcStatus;
+import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.protocol.tri.TripleConstant;
 import org.apache.dubbo.rpc.protocol.tri.TripleHeaderEnum;
 
@@ -80,7 +81,8 @@ public class StreamUtils {
      * @param attachments          KV pairs
      * @param needConvertHeaderKey convert flag
      */
-    public static void convertAttachment(DefaultHttp2Headers headers,
+    public static void convertAttachment(FrameworkModel frameworkModel,
+                                         DefaultHttp2Headers headers,
                                          Map<String, Object> attachments,
                                          boolean needConvertHeaderKey) {
         if (attachments == null) {
@@ -111,9 +113,11 @@ public class StreamUtils {
     }
 
 
+    // FIXME should we remove this method?
+    @Deprecated
     public static void convertAttachment(DefaultHttp2Headers headers,
                                          Map<String, Object> attachments) {
-        convertAttachment(headers, attachments, false);
+        convertAttachment(FrameworkModel.defaultModel(), headers, attachments, false);
     }
 
     /**

@@ -32,6 +32,7 @@ import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcContext;
 import org.apache.dubbo.rpc.RpcException;
+import org.apache.dubbo.rpc.model.ApplicationModel;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -52,6 +53,12 @@ public class TraceFilter implements Filter {
     private static final String TRACE_COUNT = "trace.count";
 
     private static final ConcurrentMap<String, Set<Channel>> TRACERS = new ConcurrentHashMap<>();
+
+    private final ApplicationModel applicationModel;
+
+    public TraceFilter(ApplicationModel applicationModel) {
+        this.applicationModel = applicationModel;
+    }
 
     public static void addTracer(Class<?> type, String method, Channel channel, int max) {
         channel.setAttribute(TRACE_MAX, max);
@@ -104,7 +111,7 @@ public class TraceFilter implements Filter {
                                 channel.send("\r\n" + RpcContext.getServiceContext().getRemoteAddress() + " -> "
                                     + invoker.getInterface().getName()
                                     + "." + invocation.getMethodName()
-                                    + "(" + JsonUtils.getJson().toJson(invocation.getArguments()) + ")" + " -> " + JsonUtils.getJson().toJson(result.getValue())
+                                    + "(" + JsonUtils.getJson(applicationModel).toJson(invocation.getArguments()) + ")" + " -> " + JsonUtils.getJson(applicationModel).toJson(result.getValue())
                                     + "\r\nelapsed: " + (end - start) + " ms."
                                     + "\r\n\r\n" + prompt);
                             }
