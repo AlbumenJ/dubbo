@@ -198,6 +198,7 @@ public class ZookeeperMetadataReport extends AbstractMetadataReport {
                 throw new IllegalArgumentException("zookeeper publishConfigCas requires stat type ticket");
             }
             String pathKey = buildPathKey(group, key);
+            logger.info("registerServiceAppMapping pathKey: " + pathKey + ", content: " + content);
             zkClient.createOrUpdate(pathKey, content, false, ticket == null ? 0 : ((Stat) ticket).getVersion());
             return true;
         } catch (Exception e) {

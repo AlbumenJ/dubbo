@@ -173,6 +173,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
         } catch (Exception e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
+        logger.info("ZNode " + path + " has been created with data " + data + " end");
     }
 
     @Override
@@ -205,6 +206,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
         } catch (Exception e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
+        logger.info("update path: " + path + ", data: " + data + " end");
     }
 
     @Override
@@ -247,8 +249,10 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
     protected void createOrUpdatePersistent(String path, String data, int version) {
         try {
             if (checkExists(path)) {
+                logger.info("ZNode " + path + " already exists, updating it with data " + data);
                 update(path, data, version);
             } else {
+                logger.info("ZNode " + path + " does not exist, creating it with data " + data);
                 createPersistent(path, data, false);
             }
         } catch (Exception e) {

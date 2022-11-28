@@ -82,7 +82,10 @@ public class MetadataServiceNameMapping extends AbstractServiceNameMapping {
                 int currentRetryTimes = 1;
                 String newConfigContent = appName;
                 do {
+                    logger.info("Try to register service-app mapping for " + serviceInterface + " to " + appName + " on " + entry.getKey() + " for " + currentRetryTimes + " times.");
                     ConfigItem configItem = metadataReport.getConfigItem(serviceInterface, DEFAULT_MAPPING_GROUP);
+                    logger.info("The origin service-app mapping content for " + serviceInterface + " is " + configItem.getContent() + " on " + entry.getKey());
+                    logger.info("The origin service-app mapping stat for " + serviceInterface + " is " + configItem.getTicket() + " on " + entry.getKey());
                     String oldConfigContent = configItem.getContent();
                     if (StringUtils.isNotEmpty(oldConfigContent)) {
                         boolean contains = StringUtils.isContains(oldConfigContent, appName);
@@ -94,6 +97,9 @@ public class MetadataServiceNameMapping extends AbstractServiceNameMapping {
                         newConfigContent = oldConfigContent + COMMA_SEPARATOR + appName;
                     }
                     succeeded = metadataReport.registerServiceAppMapping(serviceInterface, DEFAULT_MAPPING_GROUP, newConfigContent, configItem.getTicket());
+                    configItem = metadataReport.getConfigItem(serviceInterface, DEFAULT_MAPPING_GROUP);
+                    logger.info("The new service-app mapping content for " + serviceInterface + " is " + configItem.getContent() + " on " + entry.getKey());
+                    logger.info("The new service-app mapping stat for " + serviceInterface + " is " + configItem.getTicket() + " on " + entry.getKey());
                 } while (!succeeded && currentRetryTimes++ <= CAS_RETRY_TIMES);
 
                 if (!succeeded) {
