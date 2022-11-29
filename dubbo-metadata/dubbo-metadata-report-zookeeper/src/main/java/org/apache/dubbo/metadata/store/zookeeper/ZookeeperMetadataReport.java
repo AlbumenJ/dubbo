@@ -199,7 +199,7 @@ public class ZookeeperMetadataReport extends AbstractMetadataReport {
             }
             String pathKey = buildPathKey(group, key);
             logger.info("registerServiceAppMapping pathKey: " + pathKey + ", content: " + content);
-            zkClient.createOrUpdate(pathKey, content, false, ticket == null ? 0 : ((Stat) ticket).getVersion());
+            zkClient.createOrUpdate(pathKey, content, false, ticket == null ? null : ((Stat) ticket).getVersion());
             return true;
         } catch (Exception e) {
             logger.warn(REGISTRY_ZOOKEEPER_EXCEPTION, "", "", "zookeeper publishConfigCas failed.", e);

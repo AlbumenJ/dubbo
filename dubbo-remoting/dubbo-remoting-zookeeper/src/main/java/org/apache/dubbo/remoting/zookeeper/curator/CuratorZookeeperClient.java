@@ -246,9 +246,9 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
     }
 
     @Override
-    protected void createOrUpdatePersistent(String path, String data, int version) {
+    protected void createOrUpdatePersistent(String path, String data, Integer version) {
         try {
-            if (checkExists(path)) {
+            if (checkExists(path) && version != null) {
                 logger.info("ZNode " + path + " already exists, updating it with data " + data);
                 update(path, data, version);
             } else {
@@ -261,9 +261,9 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorZooke
     }
 
     @Override
-    protected void createOrUpdateEphemeral(String path, String data, int version) {
+    protected void createOrUpdateEphemeral(String path, String data, Integer version) {
         try {
-            if (checkExists(path)) {
+            if (checkExists(path) && version != null) {
                 update(path, data, version);
             } else {
                 createEphemeral(path, data, false);
