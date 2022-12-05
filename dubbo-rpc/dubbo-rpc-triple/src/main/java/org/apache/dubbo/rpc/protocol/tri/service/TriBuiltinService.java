@@ -55,7 +55,7 @@ public class TriBuiltinService {
         healthService = healthStatusManager.getHealthService();
         reflectionServiceV1Alpha = new ReflectionV1AlphaService();
         proxyFactory = frameworkModel.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
-        pathResolver = frameworkModel.getExtensionLoader(PathResolver.class).getDefaultExtension();
+        pathResolver = frameworkModel.getExtensionLoader(PathResolver.class).getExtension("tri");
         init();
     }
 

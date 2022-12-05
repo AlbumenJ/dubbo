@@ -19,11 +19,12 @@ package org.apache.dubbo.rpc.protocol.rest;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.remoting.http.HttpBinder;
-import org.apache.dubbo.remoting.http.servlet.BootstrapListener;
-import org.apache.dubbo.remoting.http.servlet.ServletManager;
-import org.apache.dubbo.rpc.ProtocolServer;
+import org.apache.dubbo.rpc.Exporter;
+import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.protocol.AbstractProxyProtocol;
+import org.apache.dubbo.rpc.protocol.rest.netty4.NettyServer;
+import org.apache.dubbo.rpc.protocol.rest.netty4.RestResolver;
 
 import org.apache.http.HeaderElement;
 import org.apache.http.HeaderElementIterator;
@@ -38,9 +39,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
-import org.jboss.resteasy.util.GetRestful;
 
-import javax.servlet.ServletContext;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import java.util.Map;
@@ -52,17 +51,16 @@ import static org.apache.dubbo.common.constants.CommonConstants.DEFAULT_TIMEOUT;
 import static org.apache.dubbo.common.constants.CommonConstants.INTERFACE_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
 import static org.apache.dubbo.common.constants.LoggerCodeConstants.PROTOCOL_ERROR_CLOSE_CLIENT;
-import static org.apache.dubbo.common.constants.LoggerCodeConstants.PROTOCOL_ERROR_CLOSE_SERVER;
 import static org.apache.dubbo.remoting.Constants.CONNECTIONS_KEY;
 import static org.apache.dubbo.remoting.Constants.CONNECT_TIMEOUT_KEY;
 import static org.apache.dubbo.remoting.Constants.DEFAULT_CONNECT_TIMEOUT;
-import static org.apache.dubbo.remoting.Constants.SERVER_KEY;
 import static org.apache.dubbo.rpc.protocol.rest.Constants.EXTENSION_KEY;
 
 public class RestProtocol extends AbstractProxyProtocol {
 
+    protected final Map<String, NettyServer> serverMap = new ConcurrentHashMap<>();
     private static final int DEFAULT_PORT = 80;
-    private static final String DEFAULT_SERVER = "jetty";
+    private static final String DEFAULT_SERVER = "netty4";
 
     private static final int HTTPCLIENTCONNECTIONMANAGER_MAXPERROUTE = 20;
     private static final int HTTPCLIENTCONNECTIONMANAGER_MAXTOTAL = 20;
@@ -75,6 +73,8 @@ public class RestProtocol extends AbstractProxyProtocol {
     private final Map<String, ReferenceCountedClient> clients = new ConcurrentHashMap<>();
 
     private volatile ConnectionMonitor connectionMonitor;
+
+    private final RestResolver restResolver = new RestResolver();
 
     public RestProtocol() {
         super(WebApplicationException.class, ProcessingException.class);
@@ -91,45 +91,24 @@ public class RestProtocol extends AbstractProxyProtocol {
 
     @Override
     protected <T> Runnable doExport(T impl, Class<T> type, URL url) throws RpcException {
-        String addr = getAddr(url);
-        Class implClass = url.getServiceModel().getProxyObject().getClass();
-        RestProtocolServer server = (RestProtocolServer) serverMap.computeIfAbsent(addr, restServer -> {
-            RestProtocolServer s = serverFactory.createServer(url.getParameter(SERVER_KEY, DEFAULT_SERVER));
-            s.setAddress(url.getAddress());
-            s.start(url);
-            return s;
-        });
+        return null;
+    }
 
-        String contextPath = getContextPath(url);
-        if ("servlet".equalsIgnoreCase(url.getParameter(SERVER_KEY, DEFAULT_SERVER))) {
-            ServletContext servletContext = ServletManager.getInstance().getServletContext(ServletManager.EXTERNAL_SERVER_PORT);
-            if (servletContext == null) {
-                throw new RpcException("No servlet context found. Since you are using server='servlet', " +
-                    "make sure that you've configured " + BootstrapListener.class.getName() + " in web.xml");
+    @Override
+    public <T> Exporter<T> export(final Invoker<T> invoker) throws RpcException {
+        serverMap.computeIfAbsent(invoker.getUrl().getAddress(), restServer -> new NettyServer(invoker.getUrl(), restResolver));
+
+        restResolver.add(invoker.getUrl().getPath(), invoker);
+        return new Exporter<T>() {
+            @Override
+            public Invoker<T> getInvoker() {
+                return invoker;
             }
-            String webappPath = servletContext.getContextPath();
-            if (StringUtils.isNotEmpty(webappPath)) {
-                webappPath = webappPath.substring(1);
-                if (!contextPath.startsWith(webappPath)) {
-                    throw new RpcException("Since you are using server='servlet', " +
-                        "make sure that the 'contextpath' property starts with the path of external webapp");
-                }
-                contextPath = contextPath.substring(webappPath.length());
-                if (contextPath.startsWith("/")) {
-                    contextPath = contextPath.substring(1);
-                }
+
+            @Override
+            public void unexport() {
+
             }
-        }
-
-        final Class resourceDef = GetRestful.getRootResourceClass(implClass) != null ? implClass : type;
-
-        server.deploy(resourceDef, impl, contextPath);
-
-        final RestProtocolServer s = server;
-        return () -> {
-            // TODO due to dubbo's current architecture,
-            // it will be called from registry protocol in the shutdown process and won't appear in logs
-            s.undeploy(resourceDef);
         };
     }
 
@@ -224,18 +203,18 @@ public class RestProtocol extends AbstractProxyProtocol {
         if (connectionMonitor != null) {
             connectionMonitor.shutdown();
         }
-
-        for (Map.Entry<String, ProtocolServer> entry : serverMap.entrySet()) {
-            try {
-                if (logger.isInfoEnabled()) {
-                    logger.info("Closing the rest server at " + entry.getKey());
-                }
-                entry.getValue().close();
-            } catch (Throwable t) {
-                logger.warn(PROTOCOL_ERROR_CLOSE_SERVER, "", "", "Error closing rest server", t);
-            }
-        }
-        serverMap.clear();
+//
+//        for (Map.Entry<String, ProtocolServer> entry : serverMap.entrySet()) {
+//            try {
+//                if (logger.isInfoEnabled()) {
+//                    logger.info("Closing the rest server at " + entry.getKey());
+//                }
+//                entry.getValue().close();
+//            } catch (Throwable t) {
+//                logger.warn(PROTOCOL_ERROR_CLOSE_SERVER, "", "", "Error closing rest server", t);
+//            }
+//        }
+//        serverMap.clear();
 
         if (logger.isInfoEnabled()) {
             logger.info("Closing rest clients");
