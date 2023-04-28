@@ -102,6 +102,7 @@ public class MonitorFilter implements Filter, Filter.Listener {
         ServiceModel serviceModel = invoker.getUrl().getServiceModel();
         if (serviceModel instanceof ProviderModel) {
             ((ProviderModel) serviceModel).updateLastInvokeTime();
+            ((ProviderModel) serviceModel).getConcurrency().incrementAndGet();
         }
 
         // proceed invocation chain
@@ -130,6 +131,10 @@ public class MonitorFilter implements Filter, Filter.Listener {
             // count down
             getConcurrent(invoker, invocation).decrementAndGet();
         }
+        ServiceModel serviceModel = invoker.getUrl().getServiceModel();
+        if (serviceModel instanceof ProviderModel) {
+            ((ProviderModel) serviceModel).getConcurrency().decrementAndGet();
+        }
     }
 
     @Override
@@ -141,6 +146,10 @@ public class MonitorFilter implements Filter, Filter.Listener {
             }
             // count down
             getConcurrent(invoker, invocation).decrementAndGet();
+        }
+        ServiceModel serviceModel = invoker.getUrl().getServiceModel();
+        if (serviceModel instanceof ProviderModel) {
+            ((ProviderModel) serviceModel).getConcurrency().decrementAndGet();
         }
     }
 

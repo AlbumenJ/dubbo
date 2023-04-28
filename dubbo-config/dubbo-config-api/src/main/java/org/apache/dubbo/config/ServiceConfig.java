@@ -249,7 +249,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         while (idleTime < tick) {
             // service idle time.
             idleTime = System.currentTimeMillis() - Math.max(providerModel.getLastInvokeTime(), startTime);
-            if (idleTime >= tick || System.currentTimeMillis() - startTime > timeout) {
+            if ((idleTime >= tick && providerModel.getConcurrency().get() == 0) || System.currentTimeMillis() - startTime > timeout) {
                 return;
             }
             // idle rest time or timeout rest time

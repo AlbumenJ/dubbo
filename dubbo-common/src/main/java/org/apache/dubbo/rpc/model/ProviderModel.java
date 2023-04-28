@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ProviderModel is about published services
@@ -41,6 +42,8 @@ public class ProviderModel extends ServiceModel {
     private List<URL> serviceUrls = new ArrayList<>();
 
     private volatile long lastInvokeTime = 0;
+
+    private final AtomicInteger concurrency = new AtomicInteger(0);
 
     public ProviderModel(String serviceKey,
                          Object serviceInstance,
@@ -184,6 +187,10 @@ public class ProviderModel extends ServiceModel {
 
     public void updateLastInvokeTime() {
         this.lastInvokeTime = System.currentTimeMillis();
+    }
+
+    public AtomicInteger getConcurrency() {
+        return concurrency;
     }
 
     @Override
