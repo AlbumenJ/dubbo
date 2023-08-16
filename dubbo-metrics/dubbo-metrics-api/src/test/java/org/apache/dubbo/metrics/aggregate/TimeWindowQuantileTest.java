@@ -37,7 +37,6 @@ class TimeWindowQuantileTest {
         Assertions.assertEquals(quantile.quantile(0.99), 100);
     }
 
-    @Test
     @RepeatedTest(100)
     void testMulti() {
 
